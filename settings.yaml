@@ -1,0 +1,20 @@
+# 系统配置
+system:
+  host: "0.0.0.0"             # 主机地址
+  port: 8080                  # 端口
+  env: env                    # 环境
+# MySQL配置
+mysql:
+  host: "1.95.0.111"          # 主机地址
+  port: 3306                  # 端口
+  db: schisandra-cloud-album  # 数据库名称
+  user: root                  # 用户名
+  password: LDQ20020618xxx    # 密码
+  log-level: dev              # 日志级别
+# 日志配置
+logger:
+  level: info                 # 日志级别
+  prefix: "[schisandra]"      # 日志前缀
+  director: log               # 日志文件存放目录
+  show-line: true             # 是否显示文件行号
+  log-in-console: true        # 是否在控制台打印日志
