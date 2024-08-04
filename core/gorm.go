@@ -10,9 +10,9 @@ import (
 )
 
 func InitGorm() {
-	global.DB = mySQlConnect()
+	global.DB = MySQlConnect()
 }
-func mySQlConnect() *gorm.DB {
+func MySQlConnect() *gorm.DB {
 	if global.CONFIG.MySQL.Host == "" {
 		global.LOG.Warnln("未配置MySQL,取消连接！")
 		return nil
