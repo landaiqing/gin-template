@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -13,6 +14,7 @@ func InitGorm() {
 }
 func mySQlConnect() *gorm.DB {
 	if global.CONFIG.MySQL.Host == "" {
+		global.LOG.Warnln("未配置MySQL,取消连接！")
 		return nil
 	}
 	dsn := global.CONFIG.MySQL.Dsn()
@@ -27,7 +29,7 @@ func mySQlConnect() *gorm.DB {
 		Logger: mysqlLogger,
 	})
 	if err != nil {
-		panic(err)
+		global.LOG.Fatalf(fmt.Sprintf("[%s] MySQL 连接失败", dsn))
 	}
 	sqlDB, _ := db.DB()
 	sqlDB.SetMaxIdleConns(global.CONFIG.MySQL.MaxIdleConnes)

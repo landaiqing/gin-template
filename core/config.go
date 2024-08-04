@@ -13,14 +13,13 @@ import (
 func InitConfig() {
 	const ConfigFile = "config.yaml"
 	c := &config.Config{}
-	yamlCOnf, err := os.ReadFile(ConfigFile)
+	yamlConf, err := os.ReadFile(ConfigFile)
 	if err != nil {
 		panic(fmt.Errorf("get yaml config error: %s", err))
 	}
-	err = yaml.Unmarshal(yamlCOnf, c)
+	err = yaml.Unmarshal(yamlConf, c)
 	if err != nil {
 		log.Fatal("config init unmarshal error: ", err)
 	}
-	log.Println("config init success")
 	global.CONFIG = c
 }
