@@ -2,12 +2,12 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/common/result"
+	"schisandra-cloud-album/api"
 )
+
+var authApi = api.Api.AuthApi
 
 func AuthRouter(router *gin.RouterGroup) {
 	group := router.Group("auth")
-	group.GET("/user", func(c *gin.Context) {
-		result.FailWithCode(result.SystemError, c)
-	})
+	group.GET("/user/List", authApi.GetUserList)
 }

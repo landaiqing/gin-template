@@ -1,0 +1,14 @@
+info:
+  contact: {}
+paths:
+  /api/auth/user/List:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 获取所有用户列表
+      tags:
+      - 鉴权模块
+swagger: "2.0"

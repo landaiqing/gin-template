@@ -5,6 +5,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
+	"os"
 	"schisandra-cloud-album/global"
 	"time"
 )
@@ -19,10 +21,25 @@ func MySQlConnect() *gorm.DB {
 	}
 	dsn := global.CONFIG.MySQL.Dsn()
 	var mysqlLogger logger.Interface
-	if global.CONFIG.System.Env == "dev" {
-		mysqlLogger = logger.Default.LogMode(logger.Info)
+	if global.CONFIG.System.Env == "debug" {
+		//自定义日子模板 打印SQL语句
+		mysqlLogger = logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold: time.Second, //慢sql日志
+				LogLevel:      logger.Info, //级别
+				Colorful:      true,        //颜色
+
+			})
 	} else {
-		mysqlLogger = logger.Default.LogMode(logger.Error)
+		mysqlLogger = logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold: time.Second,  //慢sql日志
+				LogLevel:      logger.Error, //级别
+				Colorful:      true,         //颜色
+
+			})
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{

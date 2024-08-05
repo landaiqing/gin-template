@@ -8,8 +8,14 @@ import (
 
 func InitRouter() *gin.Engine {
 	gin.SetMode(global.CONFIG.System.Env)
-	Router := gin.Default()
-	PublicGroup := Router.Group("api")
-	modules.AuthRouter(PublicGroup)
-	return Router
+	router := gin.Default()
+	err := router.SetTrustedProxies([]string{"127.0.0.1"})
+	if err != nil {
+		global.LOG.Error(err)
+		return nil
+	}
+	PublicGroup := router.Group("api")
+	modules.SwaggerRouter(router)   // 注册swagger路由
+	modules.AuthRouter(PublicGroup) // 注册鉴权路由
+	return router
 }
