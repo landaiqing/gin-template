@@ -11,4 +11,68 @@ paths:
       summary: 获取所有用户列表
       tags:
       - 鉴权模块
+  /api/auth/user/delete:
+    delete:
+      parameters:
+      - description: 用户uuid
+        in: query
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 删除用户
+      tags:
+      - 鉴权模块
+  /api/auth/user/query_by_phone:
+    get:
+      parameters:
+      - description: 手机号
+        in: query
+        name: phone
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 根据手机号查询用户
+      tags:
+      - 鉴权模块
+  /api/auth/user/query_by_username:
+    get:
+      parameters:
+      - description: 用户名
+        in: query
+        name: username
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 根据用户名查询用户
+      tags:
+      - 鉴权模块
+  /api/auth/user/query_by_uuid:
+    get:
+      parameters:
+      - description: 用户uuid
+        in: query
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 根据uuid查询用户
+      tags:
+      - 鉴权模块
 swagger: "2.0"

@@ -99,19 +99,19 @@ func initInfo() (db *gorm.DB, g *gen.Generator, fieldOpts []gen.ModelOpt) {
 	// 将非默认字段名的字段定义为自动时间戳和软删除字段;
 	// 自动时间戳默认字段名为:`updated_at`、`created_at, 表字段数据类型为: INT 或 DATETIME
 	// 软删除默认字段名为:`deleted_at`, 表字段数据类型为: DATETIME
-	autoUpdateTimeField := gen.FieldGORMTag("update_time", func(tag field.GormTag) field.GormTag {
-		return tag.Append("autoUpdateTime")
-	})
-	autoCreateTimeField := gen.FieldGORMTag("created_time", func(tag field.GormTag) field.GormTag {
-		return tag.Append("autoCreateTime")
-	})
+	//autoUpdateTimeField := gen.FieldGORMTag("update_time", func(tag field.GormTag) field.GormTag {
+	//	return tag.Append("autoUpdateTime")
+	//})
+	//autoCreateTimeField := gen.FieldGORMTag("created_time", func(tag field.GormTag) field.GormTag {
+	//	return tag.Append("autoCreateTime")
+	//})
 	//softDeleteField := gen.FieldType("deletedAt", "gorm.DeletedAt")
 
 	// 模型自定义选项组
 	fieldOpts = []gen.ModelOpt{
 		// jsonField,
-		autoCreateTimeField,
-		autoUpdateTimeField,
+		//autoCreateTimeField,
+		//autoUpdateTimeField,
 		//softDeleteField,
 	}
 

@@ -63,11 +63,11 @@ func InitLogger() *logrus.Logger {
 	}
 	newLog.SetLevel(level) //设置日志级别
 	global.LOG = newLog
-	InitDefaultLogger()
+	initDefaultLogger()
 	return newLog
 }
 
-func InitDefaultLogger() {
+func initDefaultLogger() {
 	//全局日志
 	logrus.SetOutput(os.Stdout)                           //设置输出类型
 	logrus.SetReportCaller(global.CONFIG.Logger.ShowLine) //设置是否显示函数名和行号

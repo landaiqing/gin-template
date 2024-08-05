@@ -12,6 +12,7 @@ func main() {
 	core.InitConfig()
 	core.InitLogger()
 	core.InitGorm()
+	core.InitCaptcha()
 	// 命令行参数绑定
 	option := cmd.Parse()
 	if cmd.IsStopWeb(&option) {

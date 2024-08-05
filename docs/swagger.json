@@ -19,6 +19,106 @@
                     }
                 }
             }
+        },
+        "/api/auth/user/delete": {
+            "delete": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "删除用户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户uuid",
+                        "name": "uuid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/user/query_by_phone": {
+            "get": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "根据手机号查询用户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "手机号",
+                        "name": "phone",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/user/query_by_username": {
+            "get": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "根据用户名查询用户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/user/query_by_uuid": {
+            "get": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "根据uuid查询用户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户uuid",
+                        "name": "uuid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     }
 }

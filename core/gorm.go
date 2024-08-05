@@ -26,19 +26,22 @@ func MySQlConnect() *gorm.DB {
 		mysqlLogger = logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags),
 			logger.Config{
-				SlowThreshold: time.Second, //慢sql日志
-				LogLevel:      logger.Info, //级别
-				Colorful:      true,        //颜色
+				SlowThreshold:             time.Second, //慢sql日志
+				LogLevel:                  logger.Info, //级别
+				Colorful:                  true,        //颜色
+				IgnoreRecordNotFoundError: true,        //忽略RecordNotFoundError
+				ParameterizedQueries:      true,        //格式化SQL语句
 
 			})
 	} else {
 		mysqlLogger = logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags),
 			logger.Config{
-				SlowThreshold: time.Second,  //慢sql日志
-				LogLevel:      logger.Error, //级别
-				Colorful:      true,         //颜色
-
+				SlowThreshold:             time.Second,  //慢sql日志
+				LogLevel:                  logger.Error, //级别
+				Colorful:                  true,         //颜色
+				IgnoreRecordNotFoundError: true,         //忽略RecordNotFoundError
+				ParameterizedQueries:      true,         //格式化SQL语句
 			})
 	}
 
