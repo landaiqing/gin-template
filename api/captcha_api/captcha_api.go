@@ -1,22 +1,16 @@
-package main
+package captcha_api
 
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-
 	"github.com/wenlng/go-captcha/v2/base/option"
-	"github.com/wenlng/go-captcha/v2/click"
+	"log"
+	"schisandra-cloud-album/global"
 )
 
-var textCapt click.Captcha
-
-func init() {
-
-}
-
-func main() {
-	captData, err := textCapt.Generate()
+// GenerateTextCaptcha 生成文本验证码
+func GenerateTextCaptcha() {
+	captData, err := global.TextCaptcha.Generate()
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -1,3 +1,3 @@
-package main
+package captcha_api
 
 type CaptchaAPI struct{}

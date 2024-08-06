@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/wenlng/go-captcha/v2/click"
 	"github.com/wenlng/go-captcha/v2/rotate"
@@ -17,4 +18,5 @@ var (
 	TextCaptcha   click.Captcha
 	SlideCaptcha  slide.Captcha
 	RotateCaptcha rotate.Captcha
+	REDIS         *redis.Client
 )
