@@ -1,22 +1,21 @@
 package db
 
-import "schisandra-cloud-album/global"
+import (
+	"schisandra-cloud-album/global"
+	"schisandra-cloud-album/model"
+)
 
 func MakeMigration() {
 	var err error
 	global.LOG.Infof("开始迁移数据库")
 	err = global.DB.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(
-	//&models.ImageModel{},
-	//&models.TagModel{},
-	//&models.MessageModel{},
-	//&models.AdvertModel{},
-	//&models.UserModel{},
-	//&models.CommentModel{},
-	//&models.ArticleModel{},
-	//&models.MenuModel{},
-	//&models.MenuImageModel{},
-	//&models.FeedbackModel{},
-	//&models.LoginDataModel{},
+		&model.ScaAuthUser{},
+		&model.ScaAuthPermission{},
+		&model.ScaAuthRole{},
+		&model.ScaAuthRolePermission{},
+		&model.ScaAuthUserRole{},
+		&model.ScaAuthUserDevice{},
+		&model.ScaAuthUserSocial{},
 	)
 	if err != nil {
 		global.LOG.Error("数据库迁移失败: %v", err)
