@@ -6,6 +6,7 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/service"
+	"schisandra-cloud-album/utils"
 )
 
 var authService = service.Service.AuthService
@@ -28,7 +29,7 @@ func (AuthAPI) GetUserList(c *gin.Context) {
 // @Router /api/auth/user/query_by_username [get]
 func (AuthAPI) QueryUserByUsername(c *gin.Context) {
 	username := c.Query("username")
-	user := authService.QueryUserByName(username)
+	user := authService.QueryUserByUsername(username)
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		result.FailWithMessage("用户不存在！", c)
 		return
@@ -82,4 +83,76 @@ func (AuthAPI) QueryUserByPhone(c *gin.Context) {
 		return
 	}
 	result.OkWithData(user, c)
+}
+
+// AccountLogin 账号登录
+// @Summary 账号登录
+// @Tags 鉴权模块
+// @Param account query string true "账号"
+// @Param password query string true "密码"
+// @Success 200 {string} json
+// @Router /api/auth/user/login [post]
+func (AuthAPI) AccountLogin(c *gin.Context) {
+	account := c.PostForm("account")
+	password := c.PostForm("password")
+	isPhone := utils.IsPhone(account)
+	if isPhone {
+		user := authService.QueryUserByPhone(account)
+		if reflect.DeepEqual(user, model.ScaAuthUser{}) {
+			result.FailWithMessage("手机号未注册！", c)
+		} else {
+			verify := utils.Verify(password, *user.Password)
+			if verify {
+				result.OkWithData(user, c)
+			} else {
+				result.FailWithMessage("密码错误！", c)
+			}
+		}
+	}
+	isEmail := utils.IsEmail(account)
+	if isEmail {
+		user := authService.QueryUserByEmail(account)
+		if reflect.DeepEqual(user, model.ScaAuthUser{}) {
+			result.FailWithMessage("邮箱未注册！", c)
+		} else {
+			verify := utils.Verify(password, *user.Password)
+			if verify {
+				result.OkWithData(user, c)
+			} else {
+				result.FailWithMessage("密码错误！", c)
+			}
+		}
+	}
+	isUsername := utils.IsUsername(account)
+	if isUsername {
+		user := authService.QueryUserByUsername(account)
+		if reflect.DeepEqual(user, model.ScaAuthUser{}) {
+			result.FailWithMessage("用户名未注册！", c)
+		} else {
+			verify := utils.Verify(password, *user.Password)
+			if verify {
+				result.OkWithData(user, c)
+			} else {
+				result.FailWithMessage("密码错误！", c)
+			}
+		}
+
+	}
+}
+
+// Register 用户注册
+// @Summary 用户注册
+// @Tags 鉴权模块
+// @Param user body model.ScaAuthUser true "用户信息"
+// @Success 200 {string} json
+// @Router /api/auth/user/register [post]
+func (AuthAPI) Register(c *gin.Context) {
+	var user model.ScaAuthUser
+	_ = c.ShouldBindJSON(&user)
+	err := authService.AddUser(user)
+	if err != nil {
+		result.FailWithMessage("用户注册失败！", c)
+		return
+	}
+	result.OkWithMessage("用户注册成功！", c)
 }

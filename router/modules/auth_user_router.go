@@ -14,4 +14,6 @@ func AuthRouter(router *gin.RouterGroup) {
 	group.GET("/user/query_by_uuid", authApi.QueryUserByUuid)
 	group.DELETE("/user/delete", authApi.DeleteUser)
 	group.GET("/user/query_by_phone", authApi.QueryUserByPhone)
+	group.POST("/user/login", authApi.AccountLogin)
+	group.POST("/user/register", authApi.Register)
 }

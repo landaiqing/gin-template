@@ -27,6 +27,27 @@ paths:
       summary: 删除用户
       tags:
       - 鉴权模块
+  /api/auth/user/login:
+    post:
+      parameters:
+      - description: 账号
+        in: query
+        name: account
+        required: true
+        type: string
+      - description: 密码
+        in: query
+        name: password
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 账号登录
+      tags:
+      - 鉴权模块
   /api/auth/user/query_by_phone:
     get:
       parameters:

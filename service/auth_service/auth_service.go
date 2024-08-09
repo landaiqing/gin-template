@@ -14,8 +14,8 @@ func (AuthService) GetUserList() []*model.ScaAuthUser {
 	return data
 }
 
-// QueryUserByName 根据用户名查询用户
-func (AuthService) QueryUserByName(username string) model.ScaAuthUser {
+// QueryUserByUsername 根据用户名查询用户
+func (AuthService) QueryUserByUsername(username string) model.ScaAuthUser {
 	authUser := model.ScaAuthUser{}
 	global.DB.Where("username = ? and deleted = 0", username).First(&authUser)
 	return authUser

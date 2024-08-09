@@ -13,7 +13,7 @@ func Encrypt(val string) (string, error) {
 }
 
 // Verify 验证
-func Verify(hashedVal, val string) bool {
+func Verify(hashedVal string, val string) bool {
 	// 使用bcrypt库的CompareHashAndPassword函数比较密码
 	err := bcrypt.CompareHashAndPassword([]byte(hashedVal), []byte(val))
 	return err == nil

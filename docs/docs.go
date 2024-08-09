@@ -56,6 +56,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/auth/user/login": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "账号登录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "账号",
+                        "name": "account",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "密码",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/user/query_by_phone": {
             "get": {
                 "tags": [
