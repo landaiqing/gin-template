@@ -18,7 +18,7 @@ func I18n() gin.HandlerFunc {
 		}),
 		ginI18n.WithGetLngHandle(
 			func(context *gin.Context, defaultLng string) string {
-				lang := context.Query("lang")
+				lang := context.GetHeader("Accept-Language")
 				if lang == "" {
 					return defaultLng
 				}

@@ -38,12 +38,17 @@ func OkWithMessage(msg string, c *gin.Context) {
 func Fail(msg string, data any, c *gin.Context) {
 	Result(FAIL, msg, data, false, c)
 }
+func FailWithCodeAndMessage(code int, msg string, c *gin.Context) {
+	Result(code, msg, nil, false, c)
+}
 func FailWithMessage(msg string, c *gin.Context) {
 	Result(FAIL, msg, nil, false, c)
 }
 func FailWithData(data any, c *gin.Context) {
 	Result(FAIL, "fail", data, false, c)
-
+}
+func FailWithNull(c *gin.Context) {
+	Result(FAIL, "fail", nil, false, c)
 }
 func FailWithCode(code ErrorCode, c *gin.Context) {
 	msg, ok := ErrMap[code]

@@ -13,6 +13,7 @@ const (
 	ParamsMatchError     ErrorCode = 1008
 	ParamsNotUniqueError ErrorCode = 1009
 	FileSizeExceeded     ErrorCode = 1010
+	CaptchaExpireError   ErrorCode = 1011
 )
 
 type ErrorMap map[ErrorCode]string
@@ -28,4 +29,5 @@ var ErrMap = ErrorMap{
 	1008: "参数值不匹配",
 	1009: "参数值不唯一",
 	1010: "超出文件上传大小限制",
+	1011: "验证码已过期",
 }

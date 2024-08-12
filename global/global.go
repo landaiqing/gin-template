@@ -12,11 +12,14 @@ import (
 
 // Config 全局配置文件
 var (
-	CONFIG        *config.Config
-	DB            *gorm.DB
-	LOG           *logrus.Logger
-	TextCaptcha   click.Captcha
-	SlideCaptcha  slide.Captcha
-	RotateCaptcha rotate.Captcha
-	REDIS         *redis.Client
+	CONFIG             *config.Config
+	DB                 *gorm.DB
+	LOG                *logrus.Logger
+	TextCaptcha        click.Captcha
+	LightTextCaptcha   click.Captcha
+	ClickShapeCaptcha  click.Captcha
+	SlideCaptcha       slide.Captcha
+	RotateCaptcha      rotate.Captcha
+	SlideRegionCaptcha slide.Captcha
+	REDIS              *redis.Client
 )
