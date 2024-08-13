@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -9,7 +10,7 @@ const TableNameScaAuthUser = "sca_auth_user"
 // ScaAuthUser 用户表
 type ScaAuthUser struct {
 	ID          int64      `gorm:"column:id;type:bigint(255);primaryKey;autoIncrement:true;comment:自增ID" json:"-"`               // 自增ID
-	UUID        *string    `gorm:"column:uuid;type:varchar(255);comment:唯一ID" json:"uuid"`                                       // 唯一ID
+	UID         *string    `gorm:"column:uid;type:varchar(255);comment:唯一ID" json:"uid"`                                         // 唯一ID
 	Username    *string    `gorm:"column:username;type:varchar(32);comment:用户名" json:"username"`                                 // 用户名
 	Nickname    *string    `gorm:"column:nickname;type:varchar(32);comment:昵称" json:"nickname"`                                  // 昵称
 	Email       *string    `gorm:"column:email;type:varchar(32);comment:邮箱" json:"email"`                                        // 邮箱
@@ -17,14 +18,14 @@ type ScaAuthUser struct {
 	Password    *string    `gorm:"column:password;type:varchar(64);comment:密码" json:"-"`                                         // 密码
 	Gender      *string    `gorm:"column:gender;type:varchar(32);comment:性别" json:"gender"`                                      // 性别
 	Avatar      *string    `gorm:"column:avatar;type:varchar(255);comment:头像" json:"avatar"`                                     // 头像
-	Status      *int64     `gorm:"column:status;type:tinyint(4);comment:状态 0 正常 1 封禁" json:"status"`                             // 状态 0 正常 1 封禁
+	Status      *int64     `gorm:"column:status;type:tinyint(4);default:0;comment:状态 0 正常 1 封禁" json:"status"`                   // 状态 0 正常 1 封禁
 	Introduce   *string    `gorm:"column:introduce;type:varchar(255);comment:介绍" json:"introduce"`                               // 介绍
 	ExtJSON     *string    `gorm:"column:ext_json;type:varchar(255);comment:额外字段" json:"-"`                                      // 额外字段
 	CreatedBy   *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
 	CreatedTime *time.Time `gorm:"column:created_time;type:datetime;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_time"` // 创建时间
 	UpdateBy    *string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"update_by"`                               // 更新人
 	UpdateTime  *time.Time `gorm:"column:update_time;type:datetime;default:CURRENT_TIMESTAMP;comment:更新时间" json:"update_time"`   // 更新时间
-	Deleted     *int64     `gorm:"column:deleted;type:int(11);comment:是否删除 0 未删除 1 已删除" json:"-"`                                // 是否删除 0 未删除 1 已删除
+	Deleted     *int64     `gorm:"column:deleted;type:int(11);default:0;comment:是否删除 0 未删除 1 已删除" json:"-"`                      // 是否删除 0 未删除 1 已删除
 	Blog        *string    `gorm:"column:blog;type:varchar(255);comment:博客" json:"blog"`                                         // 博客
 	Location    *string    `gorm:"column:location;type:varchar(255);comment:地址" json:"location"`                                 // 地址
 	Company     *string    `gorm:"column:company;type:varchar(255);comment:公司" json:"company"`                                   // 公司
@@ -33,4 +34,12 @@ type ScaAuthUser struct {
 // TableName ScaAuthUser's table name
 func (*ScaAuthUser) TableName() string {
 	return TableNameScaAuthUser
+}
+
+func (user *ScaAuthUser) MarshalBinary() ([]byte, error) {
+	return json.Marshal(user)
+}
+
+func (user *ScaAuthUser) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, user)
 }

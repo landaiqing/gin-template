@@ -1,14 +1,14 @@
 package api
 
 import (
-	"schisandra-cloud-album/api/auth_api"
 	"schisandra-cloud-album/api/captcha_api"
 	"schisandra-cloud-album/api/sms_api"
+	"schisandra-cloud-album/api/user_api"
 )
 
 // Apis 统一导出的api
 type Apis struct {
-	AuthApi    auth_api.AuthAPI
+	UserApi    user_api.UserAPI
 	CaptchaApi captcha_api.CaptchaAPI
 	SmsApi     sms_api.SmsAPI
 }

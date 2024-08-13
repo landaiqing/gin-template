@@ -176,7 +176,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.ScaAuthUser"
+                            "$ref": "#/definitions/dto.ScaAuthUser"
                         }
                     }
                 ],
@@ -429,7 +429,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.ScaAuthUser": {
+        "dto.ScaAuthUser": {
             "type": "object",
             "properties": {
                 "avatar": {

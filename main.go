@@ -9,11 +9,12 @@ import (
 
 func main() {
 	// 初始化配置
-	core.InitConfig()  // 读取配置文件
-	core.InitLogger()  // 初始化日志
-	core.InitGorm()    // 初始化数据库
-	core.InitRedis()   // 初始化redis
-	core.InitCaptcha() // 初始化验证码
+	core.InitConfig()      // 读取配置文件
+	core.InitLogger()      // 初始化日志
+	core.InitGorm()        // 初始化数据库
+	core.InitRedis()       // 初始化redis
+	core.InitCaptcha()     // 初始化验证码
+	core.InitIDGenerator() // 初始化ID生成器
 	// 命令行参数绑定
 	option := cmd.Parse()
 	if cmd.IsStopWeb(&option) {

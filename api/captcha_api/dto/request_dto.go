@@ -1,4 +1,4 @@
-package model
+package dto
 
 type RotateCaptchaRequest struct {
 	Angle int    `json:"angle"`

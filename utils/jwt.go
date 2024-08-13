@@ -7,9 +7,8 @@ import (
 )
 
 type JWTPayload struct {
-	UserID   int    `json:"user_id"`
-	Role     string `json:"role"`
-	Username string `json:"username"`
+	UserID *string  `json:"user_id"`
+	RoleID []*int64 `json:"role_id"`
 }
 
 type JWTClaims struct {
@@ -17,10 +16,11 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-var MySecret = []byte(global.CONFIG.JWT.Secret)
+var MySecret []byte
 
 // GenerateToken generates a JWT token with the given payload
 func GenerateToken(payload JWTPayload) (string, error) {
+	MySecret = []byte(global.CONFIG.JWT.Secret)
 	claims := JWTClaims{
 		JWTPayload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -33,17 +33,55 @@ func GenerateToken(payload JWTPayload) (string, error) {
 	return token.SignedString(MySecret)
 }
 
+// GenerateAccessTokenAndRefreshToken generates a JWT token with the given payload, and returns the accessToken and refreshToken
+func GenerateAccessTokenAndRefreshToken(payload JWTPayload) (string, string, int64) {
+	MySecret = []byte(global.CONFIG.JWT.Secret)
+	// accessToken 的数据
+	accessClaims := JWTClaims{
+		JWTPayload: payload,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    global.CONFIG.JWT.Issuer,
+		},
+	}
+	refreshClaims := JWTClaims{
+		JWTPayload: payload,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)), // 7天
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    global.CONFIG.JWT.Issuer,
+		},
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	accessTokenString, err := accessToken.SignedString(MySecret)
+	if err != nil {
+		global.LOG.Error(err)
+		return "", "", 0
+	}
+	refreshTokenString, err := refreshToken.SignedString(MySecret)
+	if err != nil {
+		global.LOG.Error(err)
+		return "", "", 0
+	}
+	return accessTokenString, refreshTokenString, refreshClaims.ExpiresAt.Time.Unix()
+}
+
 // ParseToken parses a JWT token and returns the payload
-func ParseToken(tokenString string) (*JWTPayload, error) {
+func ParseToken(tokenString string) (*JWTPayload, bool, error) {
+	MySecret = []byte(global.CONFIG.JWT.Secret)
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return MySecret, nil
 	})
 	if err != nil {
 		global.LOG.Error(err)
-		return nil, err
+		return nil, false, err
 	}
 	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
-		return &claims.JWTPayload, nil
+		return &claims.JWTPayload, true, nil
 	}
-	return nil, err
+	return nil, false, err
 }

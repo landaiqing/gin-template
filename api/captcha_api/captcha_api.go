@@ -10,7 +10,7 @@ import (
 	"github.com/wenlng/go-captcha/v2/rotate"
 	"github.com/wenlng/go-captcha/v2/slide"
 	"log"
-	"schisandra-cloud-album/api/captcha_api/model"
+	"schisandra-cloud-album/api/captcha_api/dto"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -44,7 +44,7 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 		return
 	}
 	key := helper.StringToMD5(string(dotsByte))
-	err = redis.Set(key, dotsByte, time.Minute).Err()
+	err = redis.Set("user:login:client:"+key, dotsByte, time.Minute).Err()
 	if err != nil {
 		result.FailWithNull(c)
 		return
@@ -66,7 +66,7 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/captcha/rotate/check [post]
 func (CaptchaAPI) CheckRotateData(c *gin.Context) {
-	rotateRequest := model.RotateCaptchaRequest{}
+	rotateRequest := dto.RotateCaptchaRequest{}
 	err := c.ShouldBindJSON(&rotateRequest)
 	angle := rotateRequest.Angle
 	key := rotateRequest.Key
@@ -74,7 +74,7 @@ func (CaptchaAPI) CheckRotateData(c *gin.Context) {
 		result.FailWithNull(c)
 		return
 	}
-	cacheDataByte, err := redis.Get(key).Bytes()
+	cacheDataByte, err := redis.Get("user:login:client:" + key).Bytes()
 	if len(cacheDataByte) == 0 || err != nil {
 		result.FailWithCodeAndMessage(1011, ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 		return
@@ -126,7 +126,7 @@ func (CaptchaAPI) GenerateBasicTextCaptcha(c *gin.Context) {
 		return
 	}
 	key := helper.StringToMD5(string(dotsByte))
-	err = redis.Set(key, dotsByte, time.Minute).Err()
+	err = redis.Set("user:login:client:"+key, dotsByte, time.Minute).Err()
 	if err != nil {
 		result.FailWithNull(c)
 		return
@@ -154,7 +154,7 @@ func (CaptchaAPI) CheckClickData(c *gin.Context) {
 		result.FailWithNull(c)
 		return
 	}
-	cacheDataByte, err := redis.Get(key).Bytes()
+	cacheDataByte, err := redis.Get("user:login:client:" + key).Bytes()
 	if len(cacheDataByte) == 0 || err != nil {
 		result.FailWithNull(c)
 		return

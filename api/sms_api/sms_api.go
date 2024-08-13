@@ -7,9 +7,11 @@ import (
 	"github.com/pkg6/go-sms/gateways"
 	"github.com/pkg6/go-sms/gateways/aliyun"
 	"github.com/pkg6/go-sms/gateways/smsbao"
+	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
+	"time"
 )
 
 // SendMessageByAli 发送短信验证码
@@ -46,6 +48,8 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
 		return
 	}
+	result.OkWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendSuccess"), c)
+
 }
 
 // SendMessageBySmsBao 短信宝发送短信验证码
@@ -77,4 +81,33 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 		return
 	}
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendSuccess"), c)
+}
+
+// SendMessageTest 发送测试短信验证码
+// @Summary 发送测试短信验证码
+// @Description 发送测试短信验证码
+// @Tags 短信验证码
+// @Produce json
+// @Param phone query string true "手机号"
+// @Router /api/sms/test/send [get]
+func (SmsAPI) SendMessageTest(c *gin.Context) {
+	phone := c.Query("phone")
+	if phone == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
+		return
+	}
+	isPhone := utils.IsPhone(phone)
+	if !isPhone {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneError"), c)
+		return
+	}
+	code := utils.GenValidateCode(6)
+	err := redis.Set("user:login:sms:"+phone, code, time.Minute).Err()
+	if err != nil {
+		global.LOG.Error(err)
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
+		return
+	}
+	result.OkWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendSuccess"), c)
+
 }
