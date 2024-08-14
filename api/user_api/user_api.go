@@ -1,11 +1,14 @@
 package user_api
 
 import (
+	"encoding/json"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
+	"github.com/wumansgy/goEncrypt/aes"
 	"github.com/yitter/idgenerator-go/idgen"
 	"reflect"
 	"schisandra-cloud-album/api/user_api/dto"
+	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -19,6 +22,9 @@ import (
 
 var userService = service.Service.UserService
 var userRoleService = service.Service.UserRoleService
+var rolePermissionService = service.Service.RolePermissionService
+var permissionServiceService = service.Service.PermissionService
+var roleService = service.Service.RoleService
 
 // GetUserList
 // @Summary 获取所有用户列表
@@ -187,7 +193,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 	user := userService.QueryUserByPhone(phone)
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		// 未注册
-		code := redis.Get("user:login:sms:" + phone)
+		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
 		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
@@ -217,6 +223,36 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 				return
 			}
+			permissionIds := rolePermissionService.QueryPermissionIdsByRoleId(ids)
+			permissions, err := permissionServiceService.GetPermissionsByIds(permissionIds)
+			if err != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+				return
+			}
+			serializedPermissions, err := json.Marshal(permissions)
+			if err != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+				return
+			}
+			wrong := redis.Set(constant.UserAuthPermissionRedisKey+*addUser.UID, serializedPermissions, 0).Err()
+			if wrong != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+				return
+			}
+			roleList, err := roleService.GetRoleListByIds(ids)
+			if err != nil {
+				return
+			}
+			serializedRoleList, err := json.Marshal(roleList)
+			if err != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+				return
+			}
+			er := redis.Set(constant.UserAuthRoleRedisKey+*addUser.UID, serializedRoleList, 0).Err()
+			if er != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+				return
+			}
 			accessToken, refreshToken, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: addUser.UID, RoleID: ids})
 
 			data := dto.ResponseData{
@@ -225,7 +261,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				ExpiresAt:    expiresAt,
 				UID:          addUser.UID,
 			}
-			fail := redis.Set("user:login:token:"+*addUser.UID, data, time.Hour*24*30).Err()
+			fail := redis.Set(constant.UserLoginTokenRedisKey+*addUser.UID, data, time.Hour*24*7).Err()
 			if fail != nil {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 				return
@@ -234,7 +270,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 			return
 		}
 	} else {
-		code := redis.Get("user:login:sms:" + phone)
+		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
 		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
@@ -248,6 +284,36 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 					return
 				}
+				permissionIds := rolePermissionService.QueryPermissionIdsByRoleId(ids)
+				permissions, err := permissionServiceService.GetPermissionsByIds(permissionIds)
+				if err != nil {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return
+				}
+				serializedPermissions, err := json.Marshal(permissions)
+				if err != nil {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return
+				}
+				wrong := redis.Set(constant.UserAuthPermissionRedisKey+*user.UID, serializedPermissions, 0).Err()
+				if wrong != nil {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return
+				}
+				roleList, err := roleService.GetRoleListByIds(ids)
+				if err != nil {
+					return
+				}
+				serializedRoleList, err := json.Marshal(roleList)
+				if err != nil {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return
+				}
+				er := redis.Set(constant.UserAuthRoleRedisKey+*user.UID, serializedRoleList, 0).Err()
+				if er != nil {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return
+				}
 				accessToken, refreshToken, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: user.UID, RoleID: ids})
 
 				data := dto.ResponseData{
@@ -256,7 +322,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 					ExpiresAt:    expiresAt,
 					UID:          user.UID,
 				}
-				fail := redis.Set("user:login:token:"+*user.UID, data, time.Hour*24*30).Err()
+				fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
 				if fail != nil {
 					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 					return
@@ -277,26 +343,46 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/auth/token/refresh [post]
 func (UserAPI) RefreshHandler(c *gin.Context) {
-	refreshToken := c.Query("refresh_token")
-	if refreshToken == "" {
-		result.FailWithMessage("refresh_token不能为空！", c)
+	request := dto.RefreshTokenRequest{}
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	parseRefreshToken, isUpd, err := utils.ParseToken(refreshToken)
+	refreshToken := request.RefreshToken
+	if refreshToken == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		return
+	}
+	plaintext, err := aes.AesCtrDecryptByHex(refreshToken, []byte(global.CONFIG.Encrypt.Key), []byte(global.CONFIG.Encrypt.IV))
+	if err != nil {
+		global.LOG.Error(err)
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
+		return
+	}
+	parseRefreshToken, isUpd, err := utils.ParseToken(string(plaintext))
 	if err != nil {
 		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
 	if isUpd {
-		accessTokenString, refreshTokenString, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: parseRefreshToken.UserID, RoleID: parseRefreshToken.RoleID})
+		accessTokenString, err := utils.GenerateAccessToken(utils.JWTPayload{UserID: parseRefreshToken.UserID, RoleID: parseRefreshToken.RoleID})
+		if err != nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
+			return
+		}
+		wrong := redis.Get(constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID).Err()
+		if wrong != nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
+			return
+		}
 		data := dto.ResponseData{
 			AccessToken:  accessTokenString,
-			RefreshToken: refreshTokenString,
-			ExpiresAt:    expiresAt,
+			RefreshToken: refreshToken,
 			UID:          parseRefreshToken.UserID,
 		}
-		fail := redis.Set("user:login:token:"+*parseRefreshToken.UserID, data, time.Hour*24*30).Err()
+		fail := redis.Set("user:login:token:"+*parseRefreshToken.UserID, data, time.Hour*24*7).Err()
 		if fail != nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return

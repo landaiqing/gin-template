@@ -17,9 +17,13 @@ func UserRouter(router *gin.RouterGroup) {
 	}
 	authGroup := router.Group("auth").Use(middleware.JWTAuthMiddleware())
 	{
-		authGroup.GET("/user/List", userApi.GetUserList)
+		authGroup.GET("/user/list", userApi.GetUserList)
 		authGroup.GET("/user/query_by_uuid", userApi.QueryUserByUuid)
-		authGroup.POST("/token/refresh", userApi.RefreshHandler)
+
+	}
+	tokenGroup := router.Group("token")
+	{
+		tokenGroup.POST("/refresh", userApi.RefreshHandler)
 	}
 
 }

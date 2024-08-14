@@ -5,11 +5,11 @@ import (
 	"schisandra-cloud-album/model"
 )
 
-// GetRoleById : 通过Id获取角色信息
-func (RoleService) GetRoleById(id int64) (model.ScaAuthRole, error) {
-	var role model.ScaAuthRole
-	if err := global.DB.Where("id = ? and deleted = 0", id).First(&role).Error; err != nil {
-		return model.ScaAuthRole{}, err
+// GetRoleListByIds : 通过Id列表获取角色信息列表
+func (RoleService) GetRoleListByIds(id []*int64) ([]model.ScaAuthRole, error) {
+	var roles []model.ScaAuthRole
+	if err := global.DB.Where("id IN ?", id).Find(&roles).Error; err != nil {
+		return nil, err
 	}
-	return role, nil
+	return roles, nil
 }

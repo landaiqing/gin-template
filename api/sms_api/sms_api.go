@@ -7,6 +7,7 @@ import (
 	"github.com/pkg6/go-sms/gateways"
 	"github.com/pkg6/go-sms/gateways/aliyun"
 	"github.com/pkg6/go-sms/gateways/smsbao"
+	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -102,7 +103,7 @@ func (SmsAPI) SendMessageTest(c *gin.Context) {
 		return
 	}
 	code := utils.GenValidateCode(6)
-	err := redis.Set("user:login:sms:"+phone, code, time.Minute).Err()
+	err := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)

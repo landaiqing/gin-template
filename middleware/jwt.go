@@ -21,7 +21,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		headerPrefix := global.CONFIG.JWT.HeaderPrefix
 		accessToken := strings.TrimPrefix(authHeader, headerPrefix+" ")
 
-		if accessToken == "undefined" || accessToken == "" {
+		if accessToken == "" {
 			c.Abort()
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "AuthVerifyFailed"), c)
 			return

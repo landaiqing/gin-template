@@ -11,6 +11,7 @@ import (
 	"github.com/wenlng/go-captcha/v2/slide"
 	"log"
 	"schisandra-cloud-album/api/captcha_api/dto"
+	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -44,7 +45,7 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 		return
 	}
 	key := helper.StringToMD5(string(dotsByte))
-	err = redis.Set("user:login:client:"+key, dotsByte, time.Minute).Err()
+	err = redis.Set(constant.UserLoginCaptchaRedisKey+key, dotsByte, time.Minute).Err()
 	if err != nil {
 		result.FailWithNull(c)
 		return
@@ -74,7 +75,7 @@ func (CaptchaAPI) CheckRotateData(c *gin.Context) {
 		result.FailWithNull(c)
 		return
 	}
-	cacheDataByte, err := redis.Get("user:login:client:" + key).Bytes()
+	cacheDataByte, err := redis.Get(constant.UserLoginCaptchaRedisKey + key).Bytes()
 	if len(cacheDataByte) == 0 || err != nil {
 		result.FailWithCodeAndMessage(1011, ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 		return

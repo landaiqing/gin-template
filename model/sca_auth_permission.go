@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -28,4 +29,12 @@ type ScaAuthPermission struct {
 // TableName ScaAuthPermission's table name
 func (*ScaAuthPermission) TableName() string {
 	return TableNameScaAuthPermission
+}
+
+func (permission *ScaAuthPermission) MarshalBinary() ([]byte, error) {
+	return json.Marshal(permission)
+}
+
+func (permission *ScaAuthPermission) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, permission)
 }
