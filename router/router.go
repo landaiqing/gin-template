@@ -26,5 +26,6 @@ func InitRouter() *gin.Engine {
 	modules.UserRouter(publicGroup)    // 注册鉴权路由
 	modules.CaptchaRouter(publicGroup) // 注册验证码路由
 	modules.SmsRouter(publicGroup)     // 注册短信验证码路由
+	modules.OauthRouter(publicGroup)   // 注册oauth路由
 	return router
 }

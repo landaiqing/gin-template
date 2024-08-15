@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/wenlng/go-captcha/v2/click"
@@ -22,4 +23,5 @@ var (
 	RotateCaptcha      rotate.Captcha
 	SlideRegionCaptcha slide.Captcha
 	REDIS              *redis.Client
+	Wechat             *officialAccount.OfficialAccount
 )

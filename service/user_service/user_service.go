@@ -1,7 +1,6 @@
 package user_service
 
 import (
-	"gorm.io/gorm"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
@@ -22,10 +21,21 @@ func (UserService) QueryUserByUsername(username string) model.ScaAuthUser {
 }
 
 // QueryUserByUuid 根据用户uuid查询用户
-func (UserService) QueryUserByUuid(uuid string) model.ScaAuthUser {
+func (UserService) QueryUserByUuid(uuid *string) (model.ScaAuthUser, error) {
 	authUser := model.ScaAuthUser{}
-	global.DB.Where("uuid = ? and deleted = 0", uuid).First(&authUser)
-	return authUser
+	if err := global.DB.Where("uid = ? and deleted = 0", uuid).First(&authUser).Error; err != nil {
+		return model.ScaAuthUser{}, err
+	}
+	return authUser, nil
+}
+
+// QueryUserById 根据用户id查询用户
+func (UserService) QueryUserById(id *int64) (model.ScaAuthUser, error) {
+	authUser := model.ScaAuthUser{}
+	if err := global.DB.Where("id = ? and deleted = 0", id).First(&authUser).Error; err != nil {
+		return model.ScaAuthUser{}, err
+	}
+	return authUser, nil
 }
 
 // AddUser 添加用户
@@ -42,15 +52,14 @@ func (UserService) AddUser(user model.ScaAuthUser) (model.ScaAuthUser, error) {
 }
 
 // UpdateUser 更新用户
-func (UserService) UpdateUser(user model.ScaAuthUser) *gorm.DB {
-	authUser := model.ScaAuthUser{}
-	return global.DB.Model(&authUser).Where("uuid = ?", user.UID).Updates(user)
+func (UserService) UpdateUser(phone string, password string) error {
+	return global.DB.Model(&model.ScaAuthUser{}).Where("phone = ? and deleted = 0", phone).Updates(&model.ScaAuthUser{Password: &password}).Error
 }
 
 // DeleteUser 删除用户
 func (UserService) DeleteUser(uuid string) error {
 	authUser := model.ScaAuthUser{}
-	return global.DB.Model(&authUser).Where("uuid = ?", uuid).Updates(&model.ScaAuthUser{Deleted: &enum.DELETED}).Error
+	return global.DB.Model(&authUser).Where("uid = ?", uuid).Updates(&model.ScaAuthUser{Deleted: &enum.DELETED}).Error
 }
 
 // QueryUserByPhone 根据手机号查询用户

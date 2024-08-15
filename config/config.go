@@ -8,4 +8,5 @@ type Config struct {
 	SMS     SMS     `yaml:"sms"`
 	JWT     JWT     `yaml:"jwt"`
 	Encrypt Encrypt `yaml:"encrypt"`
+	Wechat  Wechat  `yaml:"wechat"`
 }

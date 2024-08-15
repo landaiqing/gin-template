@@ -13,6 +13,27 @@ type PhoneLoginRequest struct {
 	Captcha string `json:"captcha"`
 }
 
+// AccountLoginRequest 账号登录请求
+type AccountLoginRequest struct {
+	Account  string `json:"account"`
+	Password string `json:"password"`
+}
+
+// AddUserRequest 新增用户请求
+type AddUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Phone    string `json:"phone"`
+}
+
+// ResetPasswordRequest 重置密码请求
+type ResetPasswordRequest struct {
+	Phone      string `json:"phone"`
+	Captcha    string `json:"captcha"`
+	Password   string `json:"password"`
+	Repassword string `json:"repassword"`
+}
+
 // ResponseData 返回数据
 type ResponseData struct {
 	AccessToken  string  `json:"access_token"`

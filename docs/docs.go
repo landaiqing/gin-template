@@ -56,38 +56,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/login": {
-            "post": {
-                "tags": [
-                    "鉴权模块"
-                ],
-                "summary": "账号登录",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "账号",
-                        "name": "account",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "密码",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/api/auth/user/query_by_phone": {
             "get": {
                 "tags": [
@@ -151,33 +119,6 @@ const docTemplate = `{
                         "name": "uuid",
                         "in": "query",
                         "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/user/register": {
-            "post": {
-                "tags": [
-                    "鉴权模块"
-                ],
-                "summary": "用户注册",
-                "parameters": [
-                    {
-                        "description": "用户信息",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.ScaAuthUser"
-                        }
                     }
                 ],
                 "responses": {
@@ -414,7 +355,7 @@ const docTemplate = `{
                 "tags": [
                     "短信验证码"
                 ],
-                "summary": "发送短信验证码",
+                "summary": "短信宝发送短信验证码",
                 "parameters": [
                     {
                         "type": "string",
@@ -426,74 +367,163 @@ const docTemplate = `{
                 ],
                 "responses": {}
             }
+        },
+        "/api/sms/test/send": {
+            "get": {
+                "description": "发送测试短信验证码",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "短信验证码"
+                ],
+                "summary": "发送测试短信验证码",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "手机号",
+                        "name": "phone",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/token/refresh": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "刷新token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "刷新token",
+                        "name": "refresh_token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/add": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "添加用户",
+                "parameters": [
+                    {
+                        "description": "用户信息",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/login": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "账号登录",
+                "parameters": [
+                    {
+                        "description": "用户信息",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AccountLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/phone_login": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "手机号登录/注册",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "手机号",
+                        "name": "phone",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "验证码",
+                        "name": "captcha",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "dto.ScaAuthUser": {
+        "dto.AccountLoginRequest": {
             "type": "object",
             "properties": {
-                "avatar": {
-                    "description": "头像",
+                "account": {
                     "type": "string"
                 },
-                "blog": {
-                    "description": "博客",
+                "password": {
                     "type": "string"
-                },
-                "company": {
-                    "description": "公司",
-                    "type": "string"
-                },
-                "created_by": {
-                    "description": "创建人",
-                    "type": "string"
-                },
-                "created_time": {
-                    "description": "创建时间",
-                    "type": "string"
-                },
-                "email": {
-                    "description": "邮箱",
-                    "type": "string"
-                },
-                "gender": {
-                    "description": "性别",
-                    "type": "string"
-                },
-                "introduce": {
-                    "description": "介绍",
-                    "type": "string"
-                },
-                "location": {
-                    "description": "地址",
-                    "type": "string"
-                },
-                "nickname": {
-                    "description": "昵称",
+                }
+            }
+        },
+        "dto.AddUserRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
                     "type": "string"
                 },
                 "phone": {
-                    "description": "电话",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "状态 0 正常 1 封禁",
-                    "type": "integer"
-                },
-                "update_by": {
-                    "description": "更新人",
-                    "type": "string"
-                },
-                "update_time": {
-                    "description": "更新时间",
                     "type": "string"
                 },
                 "username": {
-                    "description": "用户名",
-                    "type": "string"
-                },
-                "uuid": {
-                    "description": "唯一ID",
                     "type": "string"
                 }
             }

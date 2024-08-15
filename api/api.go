@@ -2,6 +2,7 @@ package api
 
 import (
 	"schisandra-cloud-album/api/captcha_api"
+	"schisandra-cloud-album/api/oauth_api"
 	"schisandra-cloud-album/api/sms_api"
 	"schisandra-cloud-album/api/user_api"
 )
@@ -11,6 +12,7 @@ type Apis struct {
 	UserApi    user_api.UserAPI
 	CaptchaApi captcha_api.CaptchaAPI
 	SmsApi     sms_api.SmsAPI
+	OAuthApi   oauth_api.OAuthAPI
 }
 
 // Api new函数实例化，实例化完成后会返回结构体地指针类型
