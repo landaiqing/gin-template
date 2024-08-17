@@ -5,14 +5,16 @@ import (
 	"schisandra-cloud-album/api/oauth_api"
 	"schisandra-cloud-album/api/sms_api"
 	"schisandra-cloud-album/api/user_api"
+	"schisandra-cloud-album/api/websocket_api"
 )
 
 // Apis 统一导出的api
 type Apis struct {
-	UserApi    user_api.UserAPI
-	CaptchaApi captcha_api.CaptchaAPI
-	SmsApi     sms_api.SmsAPI
-	OAuthApi   oauth_api.OAuthAPI
+	UserApi      user_api.UserAPI
+	CaptchaApi   captcha_api.CaptchaAPI
+	SmsApi       sms_api.SmsAPI
+	OAuthApi     oauth_api.OAuthAPI
+	WebsocketApi websocket_api.WebsocketAPI
 }
 
 // Api new函数实例化，实例化完成后会返回结构体地指针类型

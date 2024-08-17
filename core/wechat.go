@@ -12,7 +12,7 @@ func InitWechat() {
 		AppID:  "wx55251c2f83b9fc25",
 		Secret: "d511800cd53d248afe1260bb8aeed230",
 		Token:  "LDQ20020618xxx",
-		AESKey: global.CONFIG.Wechat.AESKey,
+		AESKey: "",
 		//Log: officialAccount.Log{
 		//	Level: "debug",
 		//	File:  "./wechat.log",
@@ -23,7 +23,7 @@ func InitWechat() {
 		Cache: kernel.NewRedisClient(&kernel.UniversalOptions{
 			Addrs:    []string{global.CONFIG.Redis.Addr()},
 			Password: global.CONFIG.Redis.Password,
-			DB:       0,
+			DB:       2,
 		}),
 	})
 	if err != nil {

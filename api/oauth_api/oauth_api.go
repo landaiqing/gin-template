@@ -16,6 +16,7 @@ import (
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
 	"schisandra-cloud-album/api/user_api/dto"
+	"schisandra-cloud-album/api/websocket_api"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/redis"
@@ -44,6 +45,11 @@ var roleService = service.Service.RoleService
 // @Router /api/oauth/generate_client_id [get]
 func (OAuthAPI) GenerateClientId(c *gin.Context) {
 	ip := c.ClientIP()
+	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
+	if clientId != "" {
+		result.OkWithData(clientId, c)
+		return
+	}
 	v1 := uuid.NewV1()
 	redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), 0)
 	result.OkWithData(v1.String(), c)
@@ -74,9 +80,9 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 				key := strings.TrimPrefix(msg.EventKey, "qrscene_")
 				res := wechatLoginHandler(msg.FromUserName, key)
 				if !res {
-					return messages.NewText("登录失败")
+					return messages.NewText(ginI18n.MustGetMessage(c, "LoginFailed"))
 				}
-				return messages.NewText("登录成功")
+				return messages.NewText(ginI18n.MustGetMessage(c, "LoginSuccess"))
 
 			case models.CALLBACK_EVENT_UNSUBSCRIBE:
 				msg := models.EventUnSubscribe{}
@@ -97,9 +103,9 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 				}
 				res := wechatLoginHandler(msg.FromUserName, msg.EventKey)
 				if !res {
-					return messages.NewText("登录失败")
+					return messages.NewText(ginI18n.MustGetMessage(c, "LoginFailed"))
 				}
-				return messages.NewText("登录成功")
+				return messages.NewText(ginI18n.MustGetMessage(c, "LoginSuccess"))
 
 			}
 
@@ -147,11 +153,12 @@ func (OAuthAPI) CallbackVerify(c *gin.Context) {
 // @Router /api/oauth/get_temp_qrcode [get]
 func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	clientId := c.Query("client_id")
+	ip := c.ClientIP()
 	if clientId == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	qrcode := redis.Get(constant.UserLoginQrcodeRedisKey + clientId).Val()
+	qrcode := redis.Get(constant.UserLoginQrcodeRedisKey + ip + ":" + clientId).Val()
 
 	if qrcode != "" {
 		data := response.ResponseQRCodeCreate{}
@@ -172,7 +179,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
-	wrong := redis.Set(constant.UserLoginQrcodeRedisKey+clientId, serializedData, time.Hour*24*30).Err()
+	wrong := redis.Set(constant.UserLoginQrcodeRedisKey+ip+":"+clientId, serializedData, time.Hour*24*30).Err()
 
 	if wrong != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
@@ -181,6 +188,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	result.OK(ginI18n.MustGetMessage(c, "QRCodeGetSuccess"), data.Url, c)
 }
 
+// wechatLoginHandler 微信登录处理
 func wechatLoginHandler(openId string, clientId string) bool {
 	if openId == "" {
 		return false
@@ -275,6 +283,10 @@ func handelUserLogin(user model.ScaAuthUser, clientId string) bool {
 	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
 	w := redis.Set(constant.UserLoginWechatRedisKey+clientId, data, time.Minute*5).Err()
 	if fail != nil || w != nil {
+		return false
+	}
+	res := websocket_api.SendMessageData(clientId, data)
+	if !res {
 		return false
 	}
 	return true

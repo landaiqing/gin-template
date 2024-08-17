@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	"github.com/wumansgy/goEncrypt/aes"
 	"github.com/yitter/idgenerator-go/idgen"
 	"reflect"
 	"schisandra-cloud-album/api/user_api/dto"
@@ -328,13 +327,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	plaintext, err := aes.AesCtrDecryptByHex(refreshToken, []byte(global.CONFIG.Encrypt.Key), []byte(global.CONFIG.Encrypt.IV))
-	if err != nil {
-		global.LOG.Error(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
-		return
-	}
-	parseRefreshToken, isUpd, err := utils.ParseToken(string(plaintext))
+	parseRefreshToken, isUpd, err := utils.ParseToken(refreshToken)
 	if err != nil {
 		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
