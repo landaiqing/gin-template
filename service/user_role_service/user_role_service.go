@@ -8,7 +8,7 @@ import (
 // GetUserRoleIdsByUserId 通过用户ID获取用户角色ID列表
 func (UserRoleService) GetUserRoleIdsByUserId(userId int64) ([]*int64, error) {
 	var roleIds []*int64
-	if err := global.DB.Table("sca_auth_user_role").Where("user_id = ?", userId).Pluck("role_id", &roleIds).Error; err != nil {
+	if err := global.DB.Table("sca_auth_user_role").Where("user_id = ? and deleted = 0 ", userId).Pluck("role_id", &roleIds).Error; err != nil {
 		return nil, err
 	}
 	return roleIds, nil

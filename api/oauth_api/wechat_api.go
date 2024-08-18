@@ -23,19 +23,11 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
-	"schisandra-cloud-album/service"
 	"schisandra-cloud-album/utils"
 	"strconv"
 	"strings"
 	"time"
 )
-
-var userService = service.Service.UserService
-var userRoleService = service.Service.UserRoleService
-var userSocialService = service.Service.UserSocialService
-var rolePermissionService = service.Service.RolePermissionService
-var permissionServiceService = service.Service.PermissionService
-var roleService = service.Service.RoleService
 
 // GenerateClientId 生成客户端ID
 // @Summary 生成客户端ID
@@ -281,11 +273,16 @@ func handelUserLogin(user model.ScaAuthUser, clientId string) bool {
 		UID:          user.UID,
 	}
 	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
-	w := redis.Set(constant.UserLoginWechatRedisKey+clientId, data, time.Minute*5).Err()
-	if fail != nil || w != nil {
+	if fail != nil {
 		return false
 	}
-	res := websocket_api.SendMessageData(clientId, data)
+	responseData := map[string]interface{}{
+		"code":    0,
+		"message": "success",
+		"data":    data,
+		"success": true,
+	}
+	res := websocket_api.SendMessageData(clientId, responseData)
 	if !res {
 		return false
 	}

@@ -43,7 +43,7 @@ func (UserAPI) GetUserList(c *gin.Context) {
 // @Router /api/auth/user/query_by_username [get]
 func (UserAPI) QueryUserByUsername(c *gin.Context) {
 	username := c.Query("username")
-	user := userService.QueryUserByUsername(username)
+	user, _ := userService.QueryUserByUsername(username)
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "NotFoundUser"), c)
 		return
@@ -117,7 +117,7 @@ func (UserAPI) AddUser(c *gin.Context) {
 		return
 	}
 
-	username := userService.QueryUserByUsername(addUserRequest.Username)
+	username, _ := userService.QueryUserByUsername(addUserRequest.Username)
 	if !reflect.DeepEqual(username, model.ScaAuthUser{}) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "UsernameExists"), c)
 		return
@@ -214,7 +214,7 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 	}
 	isUsername := utils.IsUsername(account)
 	if isUsername {
-		user := userService.QueryUserByUsername(account)
+		user, _ := userService.QueryUserByUsername(account)
 		if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "UsernameNotRegister"), c)
 			return

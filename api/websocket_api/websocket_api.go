@@ -1,11 +1,11 @@
 package websocket_api
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"sync"
 	"time"
@@ -40,9 +40,7 @@ func (WebsocketAPI) DeleteClient(context *gin.Context) {
 		}
 		deleteClient(id)
 	} else {
-		context.JSON(http.StatusOK, gin.H{
-			"mesg": "未找到该客户端",
-		})
+		result.FailWithMessage("客户端不存在", context)
 	}
 	// 关闭其消息通道
 	_, exist = getMsgChannel(id)
@@ -86,7 +84,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request, id string) {
 	var err error
 	var exist bool
 	// 创建一个定时器用于服务端心跳
-	//pingTicker := time.NewTicker(time.Second * 10)
+	pingTicker := time.NewTicker(time.Second * 10)
 	conn, err = wsupgrader.Upgrade(w, r, nil)
 	if err != nil {
 		global.LOG.Println(err)
@@ -110,7 +108,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request, id string) {
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println(err)
+			global.LOG.Error(err)
 			return
 		}
 		select {
@@ -118,30 +116,29 @@ func WsHandler(w http.ResponseWriter, r *http.Request, id string) {
 			// 从消息通道接收消息，然后推送给前端
 			err = conn.WriteJSON(content)
 			if err != nil {
-				global.LOG.Error(err)
-				err := conn.Close()
+				err = conn.Close()
 				if err != nil {
 					return
 				}
 				deleteClient(id)
 				break
 			}
-			//case <-pingTicker.C:
-			//	// 服务端心跳:每20秒ping一次客户端，查看其是否在线
-			//	err := conn.SetWriteDeadline(time.Now().Add(time.Second * 20))
-			//	if err != nil {
-			//		return
-			//	}
-			//	err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
-			//	if err != nil {
-			//		log.Println("send pong err:", err)
-			//		err := conn.Close()
-			//		if err != nil {
-			//			return
-			//		}
-			//		deleteClient(id)
-			//		return
-			//	}
+		case <-pingTicker.C:
+			// 服务端心跳:每20秒ping一次客户端，查看其是否在线
+			err := conn.SetWriteDeadline(time.Now().Add(time.Second * 20))
+			if err != nil {
+				return
+			}
+			err = conn.WriteMessage(websocket.PingMessage, []byte{})
+			if err != nil {
+				log.Println("send pong err:", err)
+				err := conn.Close()
+				if err != nil {
+					return
+				}
+				deleteClient(id)
+				return
+			}
 		}
 	}
 

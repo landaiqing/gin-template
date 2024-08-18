@@ -13,15 +13,15 @@ import (
 
 // Config 全局配置文件
 var (
-	CONFIG             *config.Config
-	DB                 *gorm.DB
-	LOG                *logrus.Logger
-	TextCaptcha        click.Captcha
-	LightTextCaptcha   click.Captcha
-	ClickShapeCaptcha  click.Captcha
-	SlideCaptcha       slide.Captcha
-	RotateCaptcha      rotate.Captcha
-	SlideRegionCaptcha slide.Captcha
-	REDIS              *redis.Client
-	Wechat             *officialAccount.OfficialAccount
+	CONFIG             *config.Config                   // 配置文件
+	DB                 *gorm.DB                         // 数据库连接
+	LOG                *logrus.Logger                   // 日志
+	TextCaptcha        click.Captcha                    // 文本验证码
+	LightTextCaptcha   click.Captcha                    // 亮色文本验证码
+	ClickShapeCaptcha  click.Captcha                    // 点击形状验证码
+	SlideCaptcha       slide.Captcha                    // 滑块验证码
+	RotateCaptcha      rotate.Captcha                   // 旋转验证码
+	SlideRegionCaptcha slide.Captcha                    // 滑块区域验证码
+	REDIS              *redis.Client                    // redis连接
+	Wechat             *officialAccount.OfficialAccount // 微信公众号
 )

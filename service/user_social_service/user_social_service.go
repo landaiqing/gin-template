@@ -29,3 +29,16 @@ func (UserSocialService) QueryUserSocialByOpenID(openID string) (model.ScaAuthUs
 	}
 	return user, nil
 }
+
+// QueryUserSocialByUUID 根据uuid查询用户信息
+func (UserSocialService) QueryUserSocialByUUID(openID string) (model.ScaAuthUserSocial, error) {
+	var user model.ScaAuthUserSocial
+	result := global.DB.Where("uuid = ? and deleted = 0", openID).First(&user)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return model.ScaAuthUserSocial{}, result.Error
+		}
+		return model.ScaAuthUserSocial{}, result.Error
+	}
+	return user, nil
+}

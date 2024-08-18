@@ -12,6 +12,7 @@ func WebsocketRouter(router *gin.RouterGroup) {
 	{
 		group.GET("/socket", websocketAPI.NewSocketClient)
 		group.GET("/delete", websocketAPI.DeleteClient)
+		group.GET("/gws", websocketAPI.NewGWSServer)
 	}
 
 }

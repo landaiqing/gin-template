@@ -9,4 +9,5 @@ type Config struct {
 	JWT     JWT     `yaml:"jwt"`
 	Encrypt Encrypt `yaml:"encrypt"`
 	Wechat  Wechat  `yaml:"wechat"`
+	OAuth   OAuth   `yaml:"oauth"`
 }

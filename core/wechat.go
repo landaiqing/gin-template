@@ -9,10 +9,10 @@ import (
 
 func InitWechat() {
 	OfficialAccountApp, err := officialAccount.NewOfficialAccount(&officialAccount.UserConfig{
-		AppID:  "wx55251c2f83b9fc25",
-		Secret: "d511800cd53d248afe1260bb8aeed230",
-		Token:  "LDQ20020618xxx",
-		AESKey: "",
+		AppID:  global.CONFIG.Wechat.AppID,
+		Secret: global.CONFIG.Wechat.AppSecret,
+		Token:  global.CONFIG.Wechat.Token,
+		AESKey: global.CONFIG.Wechat.AESKey,
 		//Log: officialAccount.Log{
 		//	Level: "debug",
 		//	File:  "./wechat.log",

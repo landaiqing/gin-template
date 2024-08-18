@@ -14,10 +14,13 @@ func (UserService) GetUserList() []*model.ScaAuthUser {
 }
 
 // QueryUserByUsername 根据用户名查询用户
-func (UserService) QueryUserByUsername(username string) model.ScaAuthUser {
+func (UserService) QueryUserByUsername(username string) (model.ScaAuthUser, error) {
 	authUser := model.ScaAuthUser{}
-	global.DB.Where("username = ? and deleted = 0", username).First(&authUser)
-	return authUser
+	err := global.DB.Where("username = ? and deleted = 0", username).First(&authUser).Error
+	if err != nil {
+		return model.ScaAuthUser{}, err
+	}
+	return authUser, nil
 }
 
 // QueryUserByUuid 根据用户uuid查询用户
