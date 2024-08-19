@@ -50,6 +50,12 @@ type GiteeUser struct {
 }
 
 // GetGiteeRedirectUrl 获取Gitee登录地址
+// @Summary 获取Gitee登录地址
+// @Description 获取Gitee登录地址
+// @Tags OAuth
+// @Produce  json
+// @Success 200 {string} string "登录地址"
+// @Router /api/oauth/gitee/get_url [get]
 func (OAuthAPI) GetGiteeRedirectUrl(c *gin.Context) {
 	clientID := global.CONFIG.OAuth.Gitee.ClientID
 	redirectURI := global.CONFIG.OAuth.Gitee.RedirectURI
@@ -123,6 +129,11 @@ func GetGiteeUserInfo(token *Token) (map[string]interface{}, error) {
 }
 
 // GiteeCallback 处理Gitee回调
+// @Summary 处理Gitee回调
+// @Description 处理Gitee回调
+// @Tags OAuth
+// @Produce  json
+// @Router /api/oauth/gitee/callback [get]
 func (OAuthAPI) GiteeCallback(c *gin.Context) {
 	var err error
 	// 获取 code

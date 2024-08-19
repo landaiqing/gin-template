@@ -20,6 +20,10 @@ var rolePermissionService = service.Service.RolePermissionService
 var permissionServiceService = service.Service.PermissionService
 var roleService = service.Service.RoleService
 
+type Token struct {
+	AccessToken string `json:"access_token"`
+}
+
 var script = `
         <script>
         window.opener.postMessage('%s', '%s');
@@ -58,8 +62,11 @@ func HandelUserLogin(user model.ScaAuthUser) (bool, map[string]interface{}) {
 	if er != nil {
 		return false, nil
 	}
-	accessToken, refreshToken, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: user.UID, RoleID: ids})
-
+	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
+	if err != nil {
+		return false, nil
+	}
+	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, time.Hour*24*7)
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

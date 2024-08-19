@@ -15,6 +15,17 @@ definitions:
       username:
         type: string
     type: object
+  dto.ResetPasswordRequest:
+    properties:
+      captcha:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      repassword:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -219,6 +230,116 @@ paths:
       summary: 生成基础文字验证码
       tags:
       - 基础文字验证码
+  /api/oauth/callback_notify:
+    post:
+      description: 微信回调验证
+      produces:
+      - application/json
+      responses: {}
+      summary: 微信回调验证
+  /api/oauth/callback_verify:
+    get:
+      description: 微信回调验证
+      produces:
+      - application/json
+      responses: {}
+      summary: 微信回调验证
+  /api/oauth/generate_client_id:
+    get:
+      description: 生成客户端ID
+      produces:
+      - application/json
+      responses: {}
+      summary: 生成客户端ID
+  /api/oauth/get_temp_qrcode:
+    get:
+      description: 获取临时二维码
+      parameters:
+      - description: 客户端ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 获取临时二维码
+  /api/oauth/gitee/callback:
+    get:
+      description: 处理Gitee回调
+      produces:
+      - application/json
+      responses: {}
+      summary: 处理Gitee回调
+      tags:
+      - OAuth
+  /api/oauth/gitee/get_url:
+    get:
+      description: 获取Gitee登录地址
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录地址
+          schema:
+            type: string
+      summary: 获取Gitee登录地址
+      tags:
+      - OAuth
+  /api/oauth/github/callback:
+    get:
+      description: 登录回调函数
+      parameters:
+      - description: code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            type: string
+      summary: 登录回调函数
+      tags:
+      - OAuth
+  /api/oauth/github/get_url:
+    get:
+      description: 获取github登录url
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录url
+          schema:
+            type: string
+      summary: 获取github登录url
+      tags:
+      - OAuth
+  /api/oauth/qq/callback:
+    get:
+      description: QQ登录回调
+      produces:
+      - application/json
+      responses: {}
+      summary: QQ登录回调
+      tags:
+      - 登录
+  /api/oauth/qq/get_url:
+    get:
+      description: 获取QQ登录地址
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录地址
+          schema:
+            type: string
+      summary: 获取QQ登录地址
+      tags:
+      - 登录
   /api/sms/ali/send:
     get:
       description: 发送短信验证码
@@ -333,6 +454,23 @@ paths:
           schema:
             type: string
       summary: 手机号登录/注册
+      tags:
+      - 鉴权模块
+  /api/user/reset_password:
+    post:
+      parameters:
+      - description: 用户信息
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 重置密码
       tags:
       - 鉴权模块
 swagger: "2.0"

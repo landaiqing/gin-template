@@ -9,14 +9,16 @@ type RefreshTokenRequest struct {
 
 // PhoneLoginRequest 手机号登录请求
 type PhoneLoginRequest struct {
-	Phone   string `json:"phone"`
-	Captcha string `json:"captcha"`
+	Phone     string `json:"phone"`
+	Captcha   string `json:"captcha"`
+	AutoLogin bool   `json:"auto_login"`
 }
 
 // AccountLoginRequest 账号登录请求
 type AccountLoginRequest struct {
-	Account  string `json:"account"`
-	Password string `json:"password"`
+	Account   string `json:"account"`
+	Password  string `json:"password"`
+	AutoLogin bool   `json:"auto_login"`
 }
 
 // AddUserRequest 新增用户请求

@@ -33,10 +33,19 @@ import (
 // @Summary 生成客户端ID
 // @Description 生成客户端ID
 // @Produce json
-// @Success 200 {object} result.Result{data=string} "客户端ID"
 // @Router /api/oauth/generate_client_id [get]
 func (OAuthAPI) GenerateClientId(c *gin.Context) {
-	ip := c.ClientIP()
+	// 尝试从 X-Real-IP 头部获取真实 IP
+	ip := c.GetHeader("X-Real-IP")
+
+	// 如果 X-Real-IP 头部不存在，则尝试从 X-Forwarded-For 头部获取
+	if ip == "" {
+		ip = c.GetHeader("X-Forwarded-For")
+	}
+	// 如果两者都不存在，则使用默认的 ClientIP 方法获取 IP
+	if ip == "" {
+		ip = c.ClientIP()
+	}
 	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
 	if clientId != "" {
 		result.OkWithData(clientId, c)
@@ -52,7 +61,6 @@ func (OAuthAPI) GenerateClientId(c *gin.Context) {
 // @Summary 微信回调验证
 // @Description 微信回调验证
 // @Produce json
-// @Success 200 {object} result.Result{data=string} "验证结果"
 // @Router /api/oauth/callback_notify [POST]
 func (OAuthAPI) CallbackNotify(c *gin.Context) {
 	rs, err := global.Wechat.Server.Notify(c.Request, func(event contract.EventInterface) interface{} {
@@ -126,7 +134,6 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 // @Summary 微信回调验证
 // @Description 微信回调验证
 // @Produce json
-// @Success 200 {object} result.Result{data=string} "验证结果"
 // @Router /api/oauth/callback_verify [get]
 func (OAuthAPI) CallbackVerify(c *gin.Context) {
 	rs, err := global.Wechat.Server.VerifyURL(c.Request)
@@ -141,11 +148,20 @@ func (OAuthAPI) CallbackVerify(c *gin.Context) {
 // @Description 获取临时二维码
 // @Produce json
 // @Param client_id query string true "客户端ID"
-// @Success 200 {object} result.Result{data=string} "临时二维码"
 // @Router /api/oauth/get_temp_qrcode [get]
 func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	clientId := c.Query("client_id")
-	ip := c.ClientIP()
+	// 尝试从 X-Real-IP 头部获取真实 IP
+	ip := c.GetHeader("X-Real-IP")
+
+	// 如果 X-Real-IP 头部不存在，则尝试从 X-Forwarded-For 头部获取
+	if ip == "" {
+		ip = c.GetHeader("X-Forwarded-For")
+	}
+	// 如果两者都不存在，则使用默认的 ClientIP 方法获取 IP
+	if ip == "" {
+		ip = c.ClientIP()
+	}
 	if clientId == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
@@ -264,8 +280,11 @@ func handelUserLogin(user model.ScaAuthUser, clientId string) bool {
 	if er != nil {
 		return false
 	}
-	accessToken, refreshToken, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: user.UID, RoleID: ids})
-
+	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
+	if err != nil {
+		return false
+	}
+	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, time.Hour*24*7)
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -282,9 +301,19 @@ func handelUserLogin(user model.ScaAuthUser, clientId string) bool {
 		"data":    data,
 		"success": true,
 	}
-	res := websocket_api.SendMessageData(clientId, responseData)
-	if !res {
+	tokenData, err := json.Marshal(responseData)
+	if err != nil {
 		return false
 	}
+	// gws方式发送消息
+	err = websocket_api.Handler.SendMessageToClient(clientId, tokenData)
+	if err != nil {
+		return false
+	}
+	// gorilla websocket方式发送消息
+	//res := websocket_api.SendMessageData(clientId, responseData)
+	//if !res {
+	//	return false
+	//}
 	return true
 }

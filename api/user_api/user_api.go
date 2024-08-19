@@ -187,7 +187,7 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 		} else {
 			verify := utils.Verify(*user.Password, password)
 			if verify {
-				handelUserLogin(user, c)
+				handelUserLogin(user, accountLoginRequest.AutoLogin, c)
 				return
 			} else {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
@@ -204,7 +204,7 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 		} else {
 			verify := utils.Verify(*user.Password, password)
 			if verify {
-				handelUserLogin(user, c)
+				handelUserLogin(user, accountLoginRequest.AutoLogin, c)
 				return
 			} else {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
@@ -221,7 +221,7 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 		} else {
 			verify := utils.Verify(*user.Password, password)
 			if verify {
-				handelUserLogin(user, c)
+				handelUserLogin(user, accountLoginRequest.AutoLogin, c)
 				return
 			} else {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
@@ -287,7 +287,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 				return
 			}
-			handelUserLogin(addUser, c)
+			handelUserLogin(addUser, request.AutoLogin, c)
 			return
 		}
 	} else {
@@ -300,7 +300,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
 				return
 			} else {
-				handelUserLogin(user, c)
+				handelUserLogin(user, request.AutoLogin, c)
 				return
 			}
 		}
@@ -327,20 +327,20 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	parseRefreshToken, isUpd, err := utils.ParseToken(refreshToken)
+	parseRefreshToken, isUpd, err := utils.ParseRefreshToken(refreshToken)
 	if err != nil {
 		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
 	if isUpd {
-		accessTokenString, err := utils.GenerateAccessToken(utils.JWTPayload{UserID: parseRefreshToken.UserID, RoleID: parseRefreshToken.RoleID})
+		accessTokenString, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: parseRefreshToken.UserID, RoleID: parseRefreshToken.RoleID})
 		if err != nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return
 		}
-		wrong := redis.Get(constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID).Err()
-		if wrong != nil {
+		token := redis.Get(constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID).Val()
+		if token == "" {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return
 		}
@@ -360,7 +360,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 }
 
 // handelUserLogin 处理用户登录
-func handelUserLogin(user model.ScaAuthUser, c *gin.Context) {
+func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 	ids, err := userRoleService.GetUserRoleIdsByUserId(user.ID)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
@@ -396,15 +396,25 @@ func handelUserLogin(user model.ScaAuthUser, c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
-	accessToken, refreshToken, expiresAt := utils.GenerateAccessTokenAndRefreshToken(utils.JWTPayload{UserID: user.UID, RoleID: ids})
-
+	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+		return
+	}
+	var days time.Duration
+	if autoLogin {
+		days = time.Hour * 24 * 7
+	} else {
+		days = time.Hour * 24 * 1
+	}
+	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, days)
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
 		UID:          user.UID,
 	}
-	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
+	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*1).Err()
 	if fail != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return

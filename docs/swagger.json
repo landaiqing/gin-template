@@ -313,6 +313,170 @@
                 }
             }
         },
+        "/api/oauth/callback_notify": {
+            "post": {
+                "description": "微信回调验证",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "微信回调验证",
+                "responses": {}
+            }
+        },
+        "/api/oauth/callback_verify": {
+            "get": {
+                "description": "微信回调验证",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "微信回调验证",
+                "responses": {}
+            }
+        },
+        "/api/oauth/generate_client_id": {
+            "get": {
+                "description": "生成客户端ID",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "生成客户端ID",
+                "responses": {}
+            }
+        },
+        "/api/oauth/get_temp_qrcode": {
+            "get": {
+                "description": "获取临时二维码",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "获取临时二维码",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户端ID",
+                        "name": "client_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/oauth/gitee/callback": {
+            "get": {
+                "description": "处理Gitee回调",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "处理Gitee回调",
+                "responses": {}
+            }
+        },
+        "/api/oauth/gitee/get_url": {
+            "get": {
+                "description": "获取Gitee登录地址",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "获取Gitee登录地址",
+                "responses": {
+                    "200": {
+                        "description": "登录地址",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth/github/callback": {
+            "get": {
+                "description": "登录回调函数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "登录回调函数",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "登录成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth/github/get_url": {
+            "get": {
+                "description": "获取github登录url",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "获取github登录url",
+                "responses": {
+                    "200": {
+                        "description": "登录url",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth/qq/callback": {
+            "get": {
+                "description": "QQ登录回调",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登录"
+                ],
+                "summary": "QQ登录回调",
+                "responses": {}
+            }
+        },
+        "/api/oauth/qq/get_url": {
+            "get": {
+                "description": "获取QQ登录地址",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登录"
+                ],
+                "summary": "获取QQ登录地址",
+                "responses": {
+                    "200": {
+                        "description": "登录地址",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/sms/ali/send": {
             "get": {
                 "description": "发送短信验证码",
@@ -489,6 +653,33 @@
                     }
                 }
             }
+        },
+        "/api/user/reset_password": {
+            "post": {
+                "tags": [
+                    "鉴权模块"
+                ],
+                "summary": "重置密码",
+                "parameters": [
+                    {
+                        "description": "用户信息",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -513,6 +704,23 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "captcha": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "repassword": {
                     "type": "string"
                 }
             }

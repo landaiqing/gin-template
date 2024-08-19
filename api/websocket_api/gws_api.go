@@ -14,9 +14,11 @@ const (
 	HeartbeatWaitTimeout = 10 * time.Second // 心跳等待超时时间
 )
 
+var Handler = NewWebSocket()
+
 func (WebsocketAPI) NewGWSServer(c *gin.Context) {
-	var handler = NewWebSocket()
-	upgrader := gws.NewUpgrader(handler, &gws.ServerOption{
+
+	upgrader := gws.NewUpgrader(Handler, &gws.ServerOption{
 		HandshakeTimeout: 5 * time.Second, // 握手超时时间
 		ReadBufferSize:   1024,            // 读缓冲区大小
 		ParallelEnabled:  true,            // 开启并行消息处理

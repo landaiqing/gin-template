@@ -10,11 +10,13 @@ var oauth = api.Api.OAuthApi
 func OauthRouter(router *gin.RouterGroup) {
 	group := router.Group("/oauth")
 	{
-		group.GET("/generate_client_id", oauth.GenerateClientId)
-		group.GET("/get_temp_qrcode", oauth.GetTempQrCode)
-		//group.GET("/callback", oauth.CallbackVerify)
-		group.POST("/callback", oauth.CallbackNotify)
-
+		wechatRouter := group.Group("/wechat")
+		{
+			wechatRouter.GET("/generate_client_id", oauth.GenerateClientId)
+			wechatRouter.GET("/get_temp_qrcode", oauth.GetTempQrCode)
+			//wechatRouter.GET("/callback", oauth.CallbackVerify)
+			wechatRouter.POST("/callback", oauth.CallbackNotify)
+		}
 		githubRouter := group.Group("/github")
 		{
 			githubRouter.GET("/get_url", oauth.GetRedirectUrl)
@@ -24,6 +26,11 @@ func OauthRouter(router *gin.RouterGroup) {
 		{
 			giteeRouter.GET("/get_url", oauth.GetGiteeRedirectUrl)
 			giteeRouter.GET("/callback", oauth.GiteeCallback)
+		}
+		qqRouter := group.Group("/qq")
+		{
+			qqRouter.GET("/get_url", oauth.GetQQRedirectUrl)
+			qqRouter.GET("/callback", oauth.QQCallback)
 		}
 	}
 

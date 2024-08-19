@@ -26,7 +26,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "AuthVerifyFailed"), c)
 			return
 		}
-		parseToken, isUpd, err := utils.ParseToken(accessToken)
+		parseToken, isUpd, err := utils.ParseAccessToken(accessToken)
 		if err != nil || !isUpd {
 			c.Abort()
 			result.FailWithCodeAndMessage(401, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)

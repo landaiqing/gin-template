@@ -16,9 +16,6 @@ import (
 	"strconv"
 )
 
-type Token struct {
-	AccessToken string `json:"access_token"`
-}
 type GitHubUser struct {
 	AvatarURL         string      `json:"avatar_url"`
 	Bio               interface{} `json:"bio"`
@@ -56,10 +53,17 @@ type GitHubUser struct {
 }
 
 // GetRedirectUrl 获取github登录url
+// @Summary 获取github登录url
+// @Description 获取github登录url
+// @Tags OAuth
+// @Produce  json
+// @Success 200 {string} string "登录url"
+// @Router /api/oauth/github/get_url [get]
 func (OAuthAPI) GetRedirectUrl(c *gin.Context) {
+	state := c.Query("state")
 	clientId := global.CONFIG.OAuth.Github.ClientID
 	redirectUrl := global.CONFIG.OAuth.Github.RedirectURI
-	url := "https://github.com/login/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + redirectUrl
+	url := "https://github.com/login/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + redirectUrl + "&state=" + state
 	result.OkWithData(url, c)
 	return
 }
@@ -129,6 +133,13 @@ func GetUserInfo(token *Token) (map[string]interface{}, error) {
 }
 
 // Callback 登录回调函数
+// @Summary 登录回调函数
+// @Description 登录回调函数
+// @Tags OAuth
+// @Produce  json
+// @Param code query string true "code"
+// @Success 200 {string} string "登录成功"
+// @Router /api/oauth/github/callback [get]
 func (OAuthAPI) Callback(c *gin.Context) {
 	var err error
 	// 获取 code
