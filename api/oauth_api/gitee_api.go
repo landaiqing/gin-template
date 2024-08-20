@@ -170,7 +170,7 @@ func (OAuthAPI) GiteeCallback(c *gin.Context) {
 	}
 
 	Id := strconv.Itoa(giteeUser.ID)
-	userSocial, err := userSocialService.QueryUserSocialByUUID(Id)
+	userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGitee)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
@@ -220,7 +220,7 @@ func (OAuthAPI) GiteeCallback(c *gin.Context) {
 		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
 	} else {
-		user, err := userService.QueryUserByUsername(giteeUser.Login)
+		user, err := userService.QueryUserById(userSocial.UserID)
 		if err != nil {
 			global.LOG.Error(err)
 			return

@@ -339,8 +339,10 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return
 		}
-		token := redis.Get(constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID).Val()
-		if token == "" {
+
+		token, err := redis.Get(constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID).Result()
+		if token == "" || err != nil {
+			global.LOG.Errorln(err)
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return
 		}

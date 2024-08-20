@@ -18,8 +18,11 @@ type AccessJWTPayload struct {
 	RoleID []*int64 `json:"role_id"`
 	Type   *string  `json:"type" default:"access"`
 }
-type JWTClaims struct {
+type AccessJWTClaims struct {
 	AccessJWTPayload
+	jwt.RegisteredClaims
+}
+type RefreshJWTClaims struct {
 	RefreshJWTPayload
 	jwt.RegisteredClaims
 }
@@ -29,7 +32,7 @@ var MySecret []byte
 // GenerateAccessToken generates a JWT token with the given payload
 func GenerateAccessToken(payload AccessJWTPayload) (string, error) {
 	MySecret = []byte(global.CONFIG.JWT.Secret)
-	claims := JWTClaims{
+	claims := AccessJWTClaims{
 		AccessJWTPayload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
@@ -53,10 +56,10 @@ func GenerateAccessToken(payload AccessJWTPayload) (string, error) {
 // GenerateRefreshToken generates a JWT token with the given payload, and returns the accessToken and refreshToken
 func GenerateRefreshToken(payload RefreshJWTPayload, days time.Duration) (string, int64) {
 	MySecret = []byte(global.CONFIG.JWT.Secret)
-	refreshClaims := JWTClaims{
+	refreshClaims := RefreshJWTClaims{
 		RefreshJWTPayload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(days)), // 7天
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(days)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    global.CONFIG.JWT.Issuer,
@@ -84,14 +87,14 @@ func ParseAccessToken(tokenString string) (*AccessJWTPayload, bool, error) {
 		global.LOG.Error(err)
 		return nil, false, err
 	}
-	token, err := jwt.ParseWithClaims(string(plaintext), &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(string(plaintext), &AccessJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return MySecret, nil
 	})
 	if err != nil {
 		global.LOG.Error(err)
 		return nil, false, err
 	}
-	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*AccessJWTClaims); ok && token.Valid {
 		return &claims.AccessJWTPayload, true, nil
 	}
 	return nil, false, err
@@ -105,14 +108,14 @@ func ParseRefreshToken(tokenString string) (*RefreshJWTPayload, bool, error) {
 		global.LOG.Error(err)
 		return nil, false, err
 	}
-	token, err := jwt.ParseWithClaims(string(plaintext), &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(string(plaintext), &RefreshJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return MySecret, nil
 	})
 	if err != nil {
 		global.LOG.Error(err)
 		return nil, false, err
 	}
-	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*RefreshJWTClaims); ok && token.Valid {
 		return &claims.RefreshJWTPayload, true, nil
 	}
 	return nil, false, err

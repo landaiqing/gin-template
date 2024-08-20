@@ -17,10 +17,10 @@ func (UserSocialService) AddUserSocial(user model.ScaAuthUserSocial) error {
 	return nil
 }
 
-// QueryUserSocialByOpenID 根据openID查询用户信息
-func (UserSocialService) QueryUserSocialByOpenID(openID string) (model.ScaAuthUserSocial, error) {
+// QueryUserSocialByOpenID 根据openID和source查询用户信息
+func (UserSocialService) QueryUserSocialByOpenID(openID string, source string) (model.ScaAuthUserSocial, error) {
 	var user model.ScaAuthUserSocial
-	result := global.DB.Where("open_id = ? and deleted = 0", openID).First(&user)
+	result := global.DB.Where("open_id = ? and source = ? and deleted = 0", openID, source).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return model.ScaAuthUserSocial{}, result.Error
@@ -30,10 +30,10 @@ func (UserSocialService) QueryUserSocialByOpenID(openID string) (model.ScaAuthUs
 	return user, nil
 }
 
-// QueryUserSocialByUUID 根据uuid查询用户信息
-func (UserSocialService) QueryUserSocialByUUID(openID string) (model.ScaAuthUserSocial, error) {
+// QueryUserSocialByUUID 根据uuid和source查询用户信息
+func (UserSocialService) QueryUserSocialByUUID(openID string, source string) (model.ScaAuthUserSocial, error) {
 	var user model.ScaAuthUserSocial
-	result := global.DB.Where("uuid = ? and deleted = 0", openID).First(&user)
+	result := global.DB.Where("uuid = ? and source = ? and deleted = 0", openID, source).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return model.ScaAuthUserSocial{}, result.Error

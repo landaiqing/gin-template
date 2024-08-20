@@ -175,7 +175,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 		return
 	}
 	Id := strconv.Itoa(gitHubUser.ID)
-	userSocial, err := userSocialService.QueryUserSocialByUUID(Id)
+	userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGithub)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
@@ -225,7 +225,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
 	} else {
-		user, err := userService.QueryUserByUsername(gitHubUser.Login)
+		user, err := userService.QueryUserById(userSocial.UserID)
 		if err != nil {
 			global.LOG.Error(err)
 			return
