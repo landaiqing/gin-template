@@ -202,7 +202,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 		return false
 	}
 	authUserSocial, err := userSocialService.QueryUserSocialByOpenID(openId, enum.OAuthSourceWechat)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
 		createUser := model.ScaAuthUser{

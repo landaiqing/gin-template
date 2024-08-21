@@ -23,7 +23,7 @@ func (WebsocketAPI) NewGWSServer(c *gin.Context) {
 		ReadBufferSize:   1024,            // 读缓冲区大小
 		ParallelEnabled:  true,            // 开启并行消息处理
 		Recovery:         gws.Recovery,    // 开启异常恢复
-		CheckUtf8Enabled: true,            // 开启UTF8校验
+		CheckUtf8Enabled: false,           // 关闭UTF8校验
 		PermessageDeflate: gws.PermessageDeflate{
 			Enabled: true, // 开启压缩
 		},

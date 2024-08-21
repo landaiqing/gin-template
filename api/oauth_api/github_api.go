@@ -176,7 +176,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 	}
 	Id := strconv.Itoa(gitHubUser.ID)
 	userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGithub)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
