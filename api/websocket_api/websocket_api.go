@@ -20,7 +20,11 @@ var (
 	mux sync.Mutex
 )
 
-// NewSocketClient 建立websocket长链接接口处理函数
+// NewSocketClient 创建websocket服务
+// @Summary 创建websocket服务(gorilla)
+// @Description 创建websocket服务
+// @Tags websocket
+// @Router /api/ws/socket [get]
 func (WebsocketAPI) NewSocketClient(context *gin.Context) {
 	id := context.Query("client_id")
 	global.LOG.Println(id + "websocket链接")

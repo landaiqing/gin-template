@@ -3,6 +3,8 @@ definitions:
     properties:
       account:
         type: string
+      auto_login:
+        type: boolean
       password:
         type: string
     type: object
@@ -13,6 +15,15 @@ definitions:
       phone:
         type: string
       username:
+        type: string
+    type: object
+  dto.PhoneLoginRequest:
+    properties:
+      auto_login:
+        type: boolean
+      captcha:
+        type: string
+      phone:
         type: string
     type: object
   dto.ResetPasswordRequest:
@@ -38,7 +49,7 @@ paths:
             type: string
       summary: 获取所有用户列表
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/auth/user/delete:
     delete:
       parameters:
@@ -54,7 +65,7 @@ paths:
             type: string
       summary: 删除用户
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/auth/user/query_by_phone:
     get:
       parameters:
@@ -70,7 +81,7 @@ paths:
             type: string
       summary: 根据手机号查询用户
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/auth/user/query_by_username:
     get:
       parameters:
@@ -86,7 +97,7 @@ paths:
             type: string
       summary: 根据用户名查询用户
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/auth/user/query_by_uuid:
     get:
       parameters:
@@ -102,7 +113,7 @@ paths:
             type: string
       summary: 根据uuid查询用户
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/captcha/rotate/check:
     post:
       description: 验证旋转验证码
@@ -138,13 +149,13 @@ paths:
       - 旋转验证码
   /api/captcha/shape/check:
     get:
-      description: 验证点击形状验证码
+      description: 生成点击形状基础验证码
       responses:
         "200":
           description: OK
           schema:
             type: string
-      summary: 验证点击形状验证码
+      summary: 生成点击形状基础验证码
       tags:
       - 点击形状验证码
   /api/captcha/shape/get:
@@ -182,13 +193,13 @@ paths:
       - 点击形状验证码
   /api/captcha/shape/slide/region/get:
     get:
-      description: 验证点击形状验证码
+      description: 生成点击形状验证码
       responses:
         "200":
           description: OK
           schema:
             type: string
-      summary: 验证点击形状验证码
+      summary: 生成点击形状验证码
       tags:
       - 点击形状验证码
   /api/captcha/text/check:
@@ -232,11 +243,13 @@ paths:
       - 基础文字验证码
   /api/oauth/callback_notify:
     post:
-      description: 微信回调验证
+      description: 微信回调
       produces:
       - application/json
       responses: {}
-      summary: 微信回调验证
+      summary: 微信回调
+      tags:
+      - 微信公众号
   /api/oauth/callback_verify:
     get:
       description: 微信回调验证
@@ -244,6 +257,8 @@ paths:
       - application/json
       responses: {}
       summary: 微信回调验证
+      tags:
+      - 微信公众号
   /api/oauth/generate_client_id:
     get:
       description: 生成客户端ID
@@ -251,6 +266,8 @@ paths:
       - application/json
       responses: {}
       summary: 生成客户端ID
+      tags:
+      - 微信公众号
   /api/oauth/get_temp_qrcode:
     get:
       description: 获取临时二维码
@@ -264,6 +281,8 @@ paths:
       - application/json
       responses: {}
       summary: 获取临时二维码
+      tags:
+      - 微信公众号
   /api/oauth/gitee/callback:
     get:
       description: 处理Gitee回调
@@ -272,7 +291,7 @@ paths:
       responses: {}
       summary: 处理Gitee回调
       tags:
-      - OAuth
+      - Gitee OAuth
   /api/oauth/gitee/get_url:
     get:
       description: 获取Gitee登录地址
@@ -285,7 +304,7 @@ paths:
             type: string
       summary: 获取Gitee登录地址
       tags:
-      - OAuth
+      - Gitee OAuth
   /api/oauth/github/callback:
     get:
       description: 登录回调函数
@@ -304,7 +323,7 @@ paths:
             type: string
       summary: 登录回调函数
       tags:
-      - OAuth
+      - Github OAuth
   /api/oauth/github/get_url:
     get:
       description: 获取github登录url
@@ -317,7 +336,7 @@ paths:
             type: string
       summary: 获取github登录url
       tags:
-      - OAuth
+      - Github OAuth
   /api/oauth/qq/callback:
     get:
       description: QQ登录回调
@@ -326,7 +345,7 @@ paths:
       responses: {}
       summary: QQ登录回调
       tags:
-      - 登录
+      - QQ OAuth
   /api/oauth/qq/get_url:
     get:
       description: 获取QQ登录地址
@@ -339,7 +358,7 @@ paths:
             type: string
       summary: 获取QQ登录地址
       tags:
-      - 登录
+      - QQ OAuth
   /api/sms/ali/send:
     get:
       description: 发送短信验证码
@@ -357,7 +376,7 @@ paths:
       - 短信验证码
   /api/sms/smsbao/send:
     get:
-      description: 发送短信验证码
+      description: 短信宝发送短信验证码
       parameters:
       - description: 手机号
         in: query
@@ -400,7 +419,7 @@ paths:
             type: string
       summary: 刷新token
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/user/add:
     post:
       parameters:
@@ -417,7 +436,7 @@ paths:
             type: string
       summary: 添加用户
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/user/login:
     post:
       parameters:
@@ -434,20 +453,16 @@ paths:
             type: string
       summary: 账号登录
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/user/phone_login:
     post:
       parameters:
-      - description: 手机号
-        in: query
-        name: phone
+      - description: 用户信息
+        in: body
+        name: user
         required: true
-        type: string
-      - description: 验证码
-        in: query
-        name: captcha
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.PhoneLoginRequest'
       responses:
         "200":
           description: OK
@@ -455,7 +470,7 @@ paths:
             type: string
       summary: 手机号登录/注册
       tags:
-      - 鉴权模块
+      - 用户模块
   /api/user/reset_password:
     post:
       parameters:
@@ -472,5 +487,19 @@ paths:
             type: string
       summary: 重置密码
       tags:
-      - 鉴权模块
+      - 用户模块
+  /api/ws/gws:
+    get:
+      description: 创建websocket服务
+      responses: {}
+      summary: 创建websocket服务
+      tags:
+      - websocket
+  /api/ws/socket:
+    get:
+      description: 创建websocket服务
+      responses: {}
+      summary: 创建websocket服务(gorilla)
+      tags:
+      - websocket
 swagger: "2.0"

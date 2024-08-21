@@ -52,7 +52,7 @@ type QQUserInfo struct {
 // GetQQRedirectUrl 获取登录地址
 // @Summary 获取QQ登录地址
 // @Description 获取QQ登录地址
-// @Tags 登录
+// @Tags QQ OAuth
 // @Produce  json
 // @Success 200 {string} string "登录地址"
 // @Router /api/oauth/qq/get_url [get]
@@ -162,7 +162,7 @@ func GetQQUserUserInfo(token *QQToken, openId string) (map[string]interface{}, e
 // QQCallback QQ登录回调
 // @Summary QQ登录回调
 // @Description QQ登录回调
-// @Tags 登录
+// @Tags QQ OAuth
 // @Produce  json
 // @Router /api/oauth/qq/callback [get]
 func (OAuthAPI) QQCallback(c *gin.Context) {

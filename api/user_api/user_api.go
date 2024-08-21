@@ -27,7 +27,7 @@ var roleService = service.Service.RoleService
 
 // GetUserList
 // @Summary 获取所有用户列表
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Success 200 {string} json
 // @Router /api/auth/user/List [get]
 func (UserAPI) GetUserList(c *gin.Context) {
@@ -37,7 +37,7 @@ func (UserAPI) GetUserList(c *gin.Context) {
 
 // QueryUserByUsername
 // @Summary 根据用户名查询用户
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param username query string true "用户名"
 // @Success 200 {string} json
 // @Router /api/auth/user/query_by_username [get]
@@ -53,7 +53,7 @@ func (UserAPI) QueryUserByUsername(c *gin.Context) {
 
 // QueryUserByUuid
 // @Summary 根据uuid查询用户
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param uuid query string true "用户uuid"
 // @Success 200 {string} json
 // @Router /api/auth/user/query_by_uuid [get]
@@ -73,7 +73,7 @@ func (UserAPI) QueryUserByUuid(c *gin.Context) {
 
 // DeleteUser 删除用户
 // @Summary 删除用户
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param uuid query string true "用户uuid"
 // @Success 200 {string} json
 // @Router /api/auth/user/delete [delete]
@@ -89,7 +89,7 @@ func (UserAPI) DeleteUser(c *gin.Context) {
 
 // QueryUserByPhone 根据手机号查询用户
 // @Summary 根据手机号查询用户
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param phone query string true "手机号"
 // @Success 200 {string} json
 // @Router /api/auth/user/query_by_phone [get]
@@ -105,7 +105,7 @@ func (UserAPI) QueryUserByPhone(c *gin.Context) {
 
 // AddUser 添加用户
 // @Summary 添加用户
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param user body dto.AddUserRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/add [post]
@@ -161,7 +161,7 @@ func (UserAPI) AddUser(c *gin.Context) {
 
 // AccountLogin 账号登录
 // @Summary 账号登录
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param user body dto.AccountLoginRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/login [post]
@@ -235,9 +235,8 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 
 // PhoneLogin 手机号登录/注册
 // @Summary 手机号登录/注册
-// @Tags 鉴权模块
-// @Param phone query string true "手机号"
-// @Param captcha query string true "验证码"
+// @Tags 用户模块
+// @Param user body dto.PhoneLoginRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/phone_login [post]
 func (UserAPI) PhoneLogin(c *gin.Context) {
@@ -311,7 +310,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 
 // RefreshHandler 刷新token
 // @Summary 刷新token
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param refresh_token query string true "刷新token"
 // @Success 200 {string} json
 // @Router /api/token/refresh [post]
@@ -427,7 +426,7 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 
 // ResetPassword 重置密码
 // @Summary 重置密码
-// @Tags 鉴权模块
+// @Tags 用户模块
 // @Param user body dto.ResetPasswordRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/reset_password [post]

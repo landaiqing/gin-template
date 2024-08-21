@@ -5,9 +5,15 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"schisandra-cloud-album/docs"
+	"schisandra-cloud-album/global"
 )
 
 func SwaggerRouter(router *gin.Engine) {
 	docs.SwaggerInfo.BasePath = ""
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	docs.SwaggerInfo.Description = global.CONFIG.Swagger.Description
+	router.GET("/api/doc/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, func(config *ginSwagger.Config) {
+		config.Title = global.CONFIG.Swagger.Title
+	}), gin.BasicAuth(gin.Accounts{
+		global.CONFIG.Swagger.User: global.CONFIG.Swagger.Password,
+	}))
 }

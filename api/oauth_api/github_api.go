@@ -55,7 +55,7 @@ type GitHubUser struct {
 // GetRedirectUrl 获取github登录url
 // @Summary 获取github登录url
 // @Description 获取github登录url
-// @Tags OAuth
+// @Tags Github OAuth
 // @Produce  json
 // @Success 200 {string} string "登录url"
 // @Router /api/oauth/github/get_url [get]
@@ -135,7 +135,7 @@ func GetUserInfo(token *Token) (map[string]interface{}, error) {
 // Callback 登录回调函数
 // @Summary 登录回调函数
 // @Description 登录回调函数
-// @Tags OAuth
+// @Tags Github OAuth
 // @Produce  json
 // @Param code query string true "code"
 // @Success 200 {string} string "登录成功"

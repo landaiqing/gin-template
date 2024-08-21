@@ -18,7 +18,7 @@ const docTemplate = `{
         "/api/auth/user/List": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "获取所有用户列表",
                 "responses": {
@@ -34,7 +34,7 @@ const docTemplate = `{
         "/api/auth/user/delete": {
             "delete": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "删除用户",
                 "parameters": [
@@ -59,7 +59,7 @@ const docTemplate = `{
         "/api/auth/user/query_by_phone": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据手机号查询用户",
                 "parameters": [
@@ -84,7 +84,7 @@ const docTemplate = `{
         "/api/auth/user/query_by_username": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据用户名查询用户",
                 "parameters": [
@@ -109,7 +109,7 @@ const docTemplate = `{
         "/api/auth/user/query_by_uuid": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据uuid查询用户",
                 "parameters": [
@@ -183,11 +183,11 @@ const docTemplate = `{
         },
         "/api/captcha/shape/check": {
             "get": {
-                "description": "验证点击形状验证码",
+                "description": "生成点击形状基础验证码",
                 "tags": [
                     "点击形状验证码"
                 ],
-                "summary": "验证点击形状验证码",
+                "summary": "生成点击形状基础验证码",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -250,11 +250,11 @@ const docTemplate = `{
         },
         "/api/captcha/shape/slide/region/get": {
             "get": {
-                "description": "验证点击形状验证码",
+                "description": "生成点击形状验证码",
                 "tags": [
                     "点击形状验证码"
                 ],
-                "summary": "验证点击形状验证码",
+                "summary": "生成点击形状验证码",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -326,11 +326,14 @@ const docTemplate = `{
         },
         "/api/oauth/callback_notify": {
             "post": {
-                "description": "微信回调验证",
+                "description": "微信回调",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "微信回调验证",
+                "tags": [
+                    "微信公众号"
+                ],
+                "summary": "微信回调",
                 "responses": {}
             }
         },
@@ -339,6 +342,9 @@ const docTemplate = `{
                 "description": "微信回调验证",
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "微信公众号"
                 ],
                 "summary": "微信回调验证",
                 "responses": {}
@@ -350,6 +356,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "微信公众号"
+                ],
                 "summary": "生成客户端ID",
                 "responses": {}
             }
@@ -359,6 +368,9 @@ const docTemplate = `{
                 "description": "获取临时二维码",
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "微信公众号"
                 ],
                 "summary": "获取临时二维码",
                 "parameters": [
@@ -380,7 +392,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Gitee OAuth"
                 ],
                 "summary": "处理Gitee回调",
                 "responses": {}
@@ -393,7 +405,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Gitee OAuth"
                 ],
                 "summary": "获取Gitee登录地址",
                 "responses": {
@@ -413,7 +425,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Github OAuth"
                 ],
                 "summary": "登录回调函数",
                 "parameters": [
@@ -442,7 +454,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Github OAuth"
                 ],
                 "summary": "获取github登录url",
                 "responses": {
@@ -462,7 +474,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "登录"
+                    "QQ OAuth"
                 ],
                 "summary": "QQ登录回调",
                 "responses": {}
@@ -475,7 +487,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "登录"
+                    "QQ OAuth"
                 ],
                 "summary": "获取QQ登录地址",
                 "responses": {
@@ -512,7 +524,7 @@ const docTemplate = `{
         },
         "/api/sms/smsbao/send": {
             "get": {
-                "description": "发送短信验证码",
+                "description": "短信宝发送短信验证码",
                 "produces": [
                     "application/json"
                 ],
@@ -557,7 +569,7 @@ const docTemplate = `{
         "/api/token/refresh": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "刷新token",
                 "parameters": [
@@ -582,7 +594,7 @@ const docTemplate = `{
         "/api/user/add": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "添加用户",
                 "parameters": [
@@ -609,7 +621,7 @@ const docTemplate = `{
         "/api/user/login": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "账号登录",
                 "parameters": [
@@ -636,23 +648,18 @@ const docTemplate = `{
         "/api/user/phone_login": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "手机号登录/注册",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "手机号",
-                        "name": "phone",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "验证码",
-                        "name": "captcha",
-                        "in": "query",
-                        "required": true
+                        "description": "用户信息",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PhoneLoginRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -668,7 +675,7 @@ const docTemplate = `{
         "/api/user/reset_password": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "重置密码",
                 "parameters": [
@@ -691,6 +698,26 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/ws/gws": {
+            "get": {
+                "description": "创建websocket服务",
+                "tags": [
+                    "websocket"
+                ],
+                "summary": "创建websocket服务",
+                "responses": {}
+            }
+        },
+        "/api/ws/socket": {
+            "get": {
+                "description": "创建websocket服务",
+                "tags": [
+                    "websocket"
+                ],
+                "summary": "创建websocket服务(gorilla)",
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -699,6 +726,9 @@ const docTemplate = `{
             "properties": {
                 "account": {
                     "type": "string"
+                },
+                "auto_login": {
+                    "type": "boolean"
                 },
                 "password": {
                     "type": "string"
@@ -715,6 +745,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PhoneLoginRequest": {
+            "type": "object",
+            "properties": {
+                "auto_login": {
+                    "type": "boolean"
+                },
+                "captcha": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 }
             }

@@ -32,34 +32,40 @@ import (
 // GenerateClientId 生成客户端ID
 // @Summary 生成客户端ID
 // @Description 生成客户端ID
+// @Tags 微信公众号
 // @Produce json
 // @Router /api/oauth/generate_client_id [get]
 func (OAuthAPI) GenerateClientId(c *gin.Context) {
-	// 尝试从 X-Real-IP 头部获取真实 IP
+	// 获取客户端IP
 	ip := c.GetHeader("X-Real-IP")
-
-	// 如果 X-Real-IP 头部不存在，则尝试从 X-Forwarded-For 头部获取
 	if ip == "" {
 		ip = c.GetHeader("X-Forwarded-For")
 	}
-	// 如果两者都不存在，则使用默认的 ClientIP 方法获取 IP
 	if ip == "" {
 		ip = c.ClientIP()
 	}
+
+	// 从Redis获取客户端ID
 	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
 	if clientId != "" {
 		result.OkWithData(clientId, c)
 		return
 	}
+
+	// 生成新的客户端ID
 	v1 := uuid.NewV1()
-	redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), 0)
+	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), 0).Err()
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
 	result.OkWithData(v1.String(), c)
-	return
 }
 
-// CallbackNotify 微信回调验证
-// @Summary 微信回调验证
-// @Description 微信回调验证
+// CallbackNotify 微信回调
+// @Summary 微信回调
+// @Tags 微信公众号
+// @Description 微信回调
 // @Produce json
 // @Router /api/oauth/callback_notify [POST]
 func (OAuthAPI) CallbackNotify(c *gin.Context) {
@@ -132,6 +138,7 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 
 // CallbackVerify 微信回调验证
 // @Summary 微信回调验证
+// @Tags 微信公众号
 // @Description 微信回调验证
 // @Produce json
 // @Router /api/oauth/callback_verify [get]
@@ -145,20 +152,18 @@ func (OAuthAPI) CallbackVerify(c *gin.Context) {
 
 // GetTempQrCode 获取临时二维码
 // @Summary 获取临时二维码
+// @Tags 微信公众号
 // @Description 获取临时二维码
 // @Produce json
 // @Param client_id query string true "客户端ID"
 // @Router /api/oauth/get_temp_qrcode [get]
 func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	clientId := c.Query("client_id")
-	// 尝试从 X-Real-IP 头部获取真实 IP
+	// 获取客户端IP
 	ip := c.GetHeader("X-Real-IP")
-
-	// 如果 X-Real-IP 头部不存在，则尝试从 X-Forwarded-For 头部获取
 	if ip == "" {
 		ip = c.GetHeader("X-Forwarded-For")
 	}
-	// 如果两者都不存在，则使用默认的 ClientIP 方法获取 IP
 	if ip == "" {
 		ip = c.ClientIP()
 	}

@@ -7,7 +7,7 @@
         "/api/auth/user/List": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "获取所有用户列表",
                 "responses": {
@@ -23,7 +23,7 @@
         "/api/auth/user/delete": {
             "delete": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "删除用户",
                 "parameters": [
@@ -48,7 +48,7 @@
         "/api/auth/user/query_by_phone": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据手机号查询用户",
                 "parameters": [
@@ -73,7 +73,7 @@
         "/api/auth/user/query_by_username": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据用户名查询用户",
                 "parameters": [
@@ -98,7 +98,7 @@
         "/api/auth/user/query_by_uuid": {
             "get": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "根据uuid查询用户",
                 "parameters": [
@@ -172,11 +172,11 @@
         },
         "/api/captcha/shape/check": {
             "get": {
-                "description": "验证点击形状验证码",
+                "description": "生成点击形状基础验证码",
                 "tags": [
                     "点击形状验证码"
                 ],
-                "summary": "验证点击形状验证码",
+                "summary": "生成点击形状基础验证码",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -239,11 +239,11 @@
         },
         "/api/captcha/shape/slide/region/get": {
             "get": {
-                "description": "验证点击形状验证码",
+                "description": "生成点击形状验证码",
                 "tags": [
                     "点击形状验证码"
                 ],
-                "summary": "验证点击形状验证码",
+                "summary": "生成点击形状验证码",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -315,11 +315,14 @@
         },
         "/api/oauth/callback_notify": {
             "post": {
-                "description": "微信回调验证",
+                "description": "微信回调",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "微信回调验证",
+                "tags": [
+                    "微信公众号"
+                ],
+                "summary": "微信回调",
                 "responses": {}
             }
         },
@@ -328,6 +331,9 @@
                 "description": "微信回调验证",
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "微信公众号"
                 ],
                 "summary": "微信回调验证",
                 "responses": {}
@@ -339,6 +345,9 @@
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "微信公众号"
+                ],
                 "summary": "生成客户端ID",
                 "responses": {}
             }
@@ -348,6 +357,9 @@
                 "description": "获取临时二维码",
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "微信公众号"
                 ],
                 "summary": "获取临时二维码",
                 "parameters": [
@@ -369,7 +381,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Gitee OAuth"
                 ],
                 "summary": "处理Gitee回调",
                 "responses": {}
@@ -382,7 +394,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Gitee OAuth"
                 ],
                 "summary": "获取Gitee登录地址",
                 "responses": {
@@ -402,7 +414,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Github OAuth"
                 ],
                 "summary": "登录回调函数",
                 "parameters": [
@@ -431,7 +443,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth"
+                    "Github OAuth"
                 ],
                 "summary": "获取github登录url",
                 "responses": {
@@ -451,7 +463,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "登录"
+                    "QQ OAuth"
                 ],
                 "summary": "QQ登录回调",
                 "responses": {}
@@ -464,7 +476,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "登录"
+                    "QQ OAuth"
                 ],
                 "summary": "获取QQ登录地址",
                 "responses": {
@@ -501,7 +513,7 @@
         },
         "/api/sms/smsbao/send": {
             "get": {
-                "description": "发送短信验证码",
+                "description": "短信宝发送短信验证码",
                 "produces": [
                     "application/json"
                 ],
@@ -546,7 +558,7 @@
         "/api/token/refresh": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "刷新token",
                 "parameters": [
@@ -571,7 +583,7 @@
         "/api/user/add": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "添加用户",
                 "parameters": [
@@ -598,7 +610,7 @@
         "/api/user/login": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "账号登录",
                 "parameters": [
@@ -625,23 +637,18 @@
         "/api/user/phone_login": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "手机号登录/注册",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "手机号",
-                        "name": "phone",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "验证码",
-                        "name": "captcha",
-                        "in": "query",
-                        "required": true
+                        "description": "用户信息",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PhoneLoginRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -657,7 +664,7 @@
         "/api/user/reset_password": {
             "post": {
                 "tags": [
-                    "鉴权模块"
+                    "用户模块"
                 ],
                 "summary": "重置密码",
                 "parameters": [
@@ -680,6 +687,26 @@
                     }
                 }
             }
+        },
+        "/api/ws/gws": {
+            "get": {
+                "description": "创建websocket服务",
+                "tags": [
+                    "websocket"
+                ],
+                "summary": "创建websocket服务",
+                "responses": {}
+            }
+        },
+        "/api/ws/socket": {
+            "get": {
+                "description": "创建websocket服务",
+                "tags": [
+                    "websocket"
+                ],
+                "summary": "创建websocket服务(gorilla)",
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -688,6 +715,9 @@
             "properties": {
                 "account": {
                     "type": "string"
+                },
+                "auto_login": {
+                    "type": "boolean"
                 },
                 "password": {
                     "type": "string"
@@ -704,6 +734,20 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PhoneLoginRequest": {
+            "type": "object",
+            "properties": {
+                "auto_login": {
+                    "type": "boolean"
+                },
+                "captcha": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 }
             }

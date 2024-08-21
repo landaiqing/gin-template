@@ -10,4 +10,5 @@ type Config struct {
 	Encrypt Encrypt `yaml:"encrypt"`
 	Wechat  Wechat  `yaml:"wechat"`
 	OAuth   OAuth   `yaml:"oauth"`
+	Swagger Swagger `yaml:"swagger"`
 }

@@ -16,6 +16,11 @@ const (
 
 var Handler = NewWebSocket()
 
+// NewGWSServer 创建websocket服务
+// @Summary 创建websocket服务
+// @Description 创建websocket服务
+// @Tags websocket
+// @Router /api/ws/gws [get]
 func (WebsocketAPI) NewGWSServer(c *gin.Context) {
 
 	upgrader := gws.NewUpgrader(Handler, &gws.ServerOption{

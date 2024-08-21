@@ -228,9 +228,9 @@ func (CaptchaAPI) GenerateClickShapeCaptcha(c *gin.Context) {
 	result.OkWithData(bt, c)
 }
 
-// GenerateSlideBasicCaptData 验证点击形状验证码
-// @Summary 验证点击形状验证码
-// @Description 验证点击形状验证码
+// GenerateSlideBasicCaptData 生成点击形状基础验证码
+// @Summary 生成点击形状基础验证码
+// @Description 生成点击形状基础验证码
 // @Tags 点击形状验证码
 // @Success 200 {string} json
 // @Router /api/captcha/shape/check [get]
@@ -315,9 +315,9 @@ func (CaptchaAPI) CheckSlideData(c *gin.Context) {
 	result.FailWithMessage("fail", c)
 }
 
-// GenerateSlideRegionCaptData 验证点击形状验证码
-// @Summary 验证点击形状验证码
-// @Description 验证点击形状验证码
+// GenerateSlideRegionCaptData 生成点击形状验证码
+// @Summary 生成点击形状验证码
+// @Description 生成点击形状验证码
 // @Tags 点击形状验证码
 // @Success 200 {string} json
 // @Router /api/captcha/shape/slide/region/get [get]

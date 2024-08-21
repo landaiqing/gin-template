@@ -28,6 +28,16 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
 		return
 	}
+	isPhone := utils.IsPhone(phone)
+	if !isPhone {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
+		return
+	}
+	val := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	if val != "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaTooOften"), c)
+		return
+	}
 	sms := gosms.NewParser(gateways.Gateways{
 		ALiYun: aliyun.ALiYun{
 			Host:            global.CONFIG.SMS.Ali.Host,
@@ -36,6 +46,11 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 		},
 	})
 	code := utils.GenValidateCode(6)
+	wrong := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
+	if wrong != nil {
+		global.LOG.Error(wrong)
+		return
+	}
 	_, err := sms.Send(phone, gosms.MapStringAny{
 		"content":  "您的验证码是：****。请不要把验证码泄露给其他人。",
 		"template": global.CONFIG.SMS.Ali.TemplateID,
@@ -55,7 +70,7 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 
 // SendMessageBySmsBao 短信宝发送短信验证码
 // @Summary 短信宝发送短信验证码
-// @Description 发送短信验证码
+// @Description 短信宝发送短信验证码
 // @Tags 短信验证码
 // @Produce json
 // @Param phone query string true "手机号"
@@ -66,6 +81,16 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
 		return
 	}
+	isPhone := utils.IsPhone(phone)
+	if !isPhone {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
+		return
+	}
+	val := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	if val != "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaTooOften"), c)
+		return
+	}
 	sms := gosms.NewParser(gateways.Gateways{
 		SmsBao: smsbao.SmsBao{
 			User:     global.CONFIG.SMS.SmsBao.User,
@@ -73,6 +98,11 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 		},
 	})
 	code := utils.GenValidateCode(6)
+	wrong := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
+	if wrong != nil {
+		global.LOG.Error(wrong)
+		return
+	}
 	_, err := sms.Send(phone, gosms.MapStringAny{
 		"content": "您的验证码是：" + code + "。请不要把验证码泄露给其他人。",
 	}, nil)
