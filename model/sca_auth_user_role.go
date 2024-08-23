@@ -9,7 +9,7 @@ const TableNameScaAuthUserRole = "sca_auth_user_role"
 // ScaAuthUserRole 用户-角色映射表
 type ScaAuthUserRole struct {
 	ID          int64      `gorm:"column:id;type:bigint(20);primaryKey;comment:主键ID" json:"id"`                                  // 主键ID
-	UserID      int64      `gorm:"column:user_id;type:bigint(20);not null;comment:用户ID" json:"user_id"`                          // 用户ID
+	UserID      string     `gorm:"column:user_id;type:varchar(255);not null;comment:用户ID" json:"user_id"`                        // 用户ID
 	RoleID      int64      `gorm:"column:role_id;type:bigint(20);not null;comment:角色ID" json:"role_id"`                          // 角色ID
 	CreatedBy   *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
 	CreatedTime *time.Time `gorm:"column:created_time;type:datetime;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_time"` // 创建时间

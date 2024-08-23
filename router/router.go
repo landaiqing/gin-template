@@ -6,6 +6,7 @@ import (
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/middleware"
 	"schisandra-cloud-album/router/modules"
+	"time"
 )
 
 func InitRouter() *gin.Engine {
@@ -18,7 +19,7 @@ func InitRouter() *gin.Engine {
 	}
 	publicGroup := router.Group("api")
 	// 跨域设置
-	publicGroup.Use(cors.Default())
+	publicGroup.Use(cors.Default()).Use(middleware.RateLimitMiddleware(time.Millisecond*100, 20))
 	// 国际化设置
 	publicGroup.Use(middleware.I18n())
 

@@ -141,13 +141,13 @@ func (UserAPI) AddUser(c *gin.Context) {
 		Password: &encrypt,
 		Phone:    &addUserRequest.Phone,
 	}
-	addUser, err := userService.AddUser(user)
+	_, err = userService.AddUser(user)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserError"), c)
 		return
 	}
 	userRole := model.ScaAuthUserRole{
-		UserID: addUser.ID,
+		UserID: uidStr,
 		RoleID: enum.User,
 	}
 	e := userRoleService.AddUserRole(userRole)
@@ -278,7 +278,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				return
 			}
 			userRole := model.ScaAuthUserRole{
-				UserID: addUser.ID,
+				UserID: uidStr,
 				RoleID: enum.User,
 			}
 			e := userRoleService.AddUserRole(userRole)

@@ -229,7 +229,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 			return false
 		}
 		userRole := model.ScaAuthUserRole{
-			UserID: addUser.ID,
+			UserID: uidStr,
 			RoleID: enum.User,
 		}
 		e := userRoleService.AddUserRole(userRole)

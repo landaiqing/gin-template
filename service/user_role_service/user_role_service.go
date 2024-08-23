@@ -21,3 +21,12 @@ func (UserRoleService) AddUserRole(userRole model.ScaAuthUserRole) error {
 	}
 	return nil
 }
+
+// GetAllUserRoles 返回所有用户的角色列表
+func (UserRoleService) GetAllUserRoles() ([]*model.ScaAuthUserRole, error) {
+	var userRoles []*model.ScaAuthUserRole
+	if err := global.DB.Table("sca_auth_user_role").Where("deleted = 0").Find(&userRoles).Error; err != nil {
+		return nil, err
+	}
+	return userRoles, nil
+}

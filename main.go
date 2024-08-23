@@ -16,6 +16,7 @@ func main() {
 	core.InitCaptcha()     // 初始化验证码
 	core.InitIDGenerator() // 初始化ID生成器
 	core.InitWechat()      // 初始化微信
+	core.InitCasbin()      // 初始化Casbin
 	// 命令行参数绑定
 	option := cmd.Parse()
 	if cmd.IsStopWeb(&option) {

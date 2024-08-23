@@ -205,7 +205,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 			return
 		}
 		userRole := model.ScaAuthUserRole{
-			UserID: addUser.ID,
+			UserID: uidStr,
 			RoleID: enum.User,
 		}
 		err = userRoleService.AddUserRole(userRole)
