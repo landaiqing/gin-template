@@ -40,13 +40,7 @@ var mu sync.Mutex
 // @Router /api/oauth/generate_client_id [get]
 func (OAuthAPI) GenerateClientId(c *gin.Context) {
 	// 获取客户端IP
-	ip := c.GetHeader("X-Real-IP")
-	if ip == "" {
-		ip = c.GetHeader("X-Forwarded-For")
-	}
-	if ip == "" {
-		ip = c.ClientIP()
-	}
+	ip := utils.GetClientIP(c)
 	// 加锁
 	mu.Lock()
 	defer mu.Unlock()
@@ -161,49 +155,48 @@ func (OAuthAPI) CallbackVerify(c *gin.Context) {
 // @Router /api/oauth/get_temp_qrcode [get]
 func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	clientId := c.Query("client_id")
-	// 获取客户端IP
-	ip := c.GetHeader("X-Real-IP")
-	if ip == "" {
-		ip = c.GetHeader("X-Forwarded-For")
-	}
-	if ip == "" {
-		ip = c.ClientIP()
-	}
 	if clientId == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	qrcode := redis.Get(constant.UserLoginQrcodeRedisKey + ip + ":" + clientId).Val()
 
+	ip := utils.GetClientIP(c) // 使用工具函数获取客户端IP
+	key := constant.UserLoginQrcodeRedisKey + ip + ":" + clientId
+
+	// 从Redis获取二维码数据
+	qrcode := redis.Get(key).Val()
 	if qrcode != "" {
-		data := response.ResponseQRCodeCreate{}
-		err := json.Unmarshal([]byte(qrcode), &data)
-		if err != nil {
+		data := new(response.ResponseQRCodeCreate)
+		if err := json.Unmarshal([]byte(qrcode), data); err != nil {
 			global.LOG.Error(err)
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 			return
 		}
 		result.OK(ginI18n.MustGetMessage(c, "QRCodeGetSuccess"), data.Url, c)
 		return
 	}
+
+	// 生成临时二维码
 	data, err := global.Wechat.QRCode.Temporary(c.Request.Context(), clientId, 30*24*3600)
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
+
+	// 序列化数据并存储到Redis
 	serializedData, err := json.Marshal(data)
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
-	wrong := redis.Set(constant.UserLoginQrcodeRedisKey+ip+":"+clientId, serializedData, time.Hour*24*30).Err()
-
-	if wrong != nil {
-		global.LOG.Error(wrong)
+	if err := redis.Set(key, serializedData, time.Hour*24*30).Err(); err != nil {
+		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
+
 	result.OK(ginI18n.MustGetMessage(c, "QRCodeGetSuccess"), data.Url, c)
 }
 

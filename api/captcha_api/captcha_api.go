@@ -30,32 +30,37 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 	captchaData, err := global.RotateCaptcha.Generate()
 	if err != nil {
 		global.LOG.Fatalln(err)
+		result.FailWithNull(c)
+		return
 	}
 	blockData := captchaData.GetData()
 	if blockData == nil {
 		result.FailWithNull(c)
 		return
 	}
-	var masterImageBase64, thumbImageBase64 string
-	masterImageBase64 = captchaData.GetMasterImage().ToBase64()
-	thumbImageBase64 = captchaData.GetThumbImage().ToBase64()
+
+	masterImageBase64 := captchaData.GetMasterImage().ToBase64()
+	thumbImageBase64 := captchaData.GetThumbImage().ToBase64()
 	dotsByte, err := json.Marshal(blockData)
 	if err != nil {
+		global.LOG.Fatalln(err)
 		result.FailWithNull(c)
 		return
 	}
+
 	key := helper.StringToMD5(string(dotsByte))
 	err = redis.Set(constant.UserLoginCaptchaRedisKey+key, dotsByte, time.Minute).Err()
 	if err != nil {
+		global.LOG.Fatalln(err)
 		result.FailWithNull(c)
 		return
 	}
-	bt := map[string]interface{}{
+
+	result.OkWithData(map[string]interface{}{
 		"key":   key,
 		"image": masterImageBase64,
 		"thumb": thumbImageBase64,
-	}
-	result.OkWithData(bt, c)
+	}, c)
 }
 
 // CheckRotateData 验证旋转验证码
@@ -67,30 +72,36 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/captcha/rotate/check [post]
 func (CaptchaAPI) CheckRotateData(c *gin.Context) {
-	rotateRequest := dto.RotateCaptchaRequest{}
-	err := c.ShouldBindJSON(&rotateRequest)
-	angle := rotateRequest.Angle
-	key := rotateRequest.Key
-	if err != nil {
+	var rotateRequest dto.RotateCaptchaRequest
+	if err := c.ShouldBindJSON(&rotateRequest); err != nil {
 		result.FailWithNull(c)
 		return
 	}
-	cacheDataByte, err := redis.Get(constant.UserLoginCaptchaRedisKey + key).Bytes()
-	if len(cacheDataByte) == 0 || err != nil {
+
+	cacheDataByte, err := redis.Get(constant.UserLoginCaptchaRedisKey + rotateRequest.Key).Bytes()
+	if err != nil || len(cacheDataByte) == 0 {
 		result.FailWithCodeAndMessage(1011, ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 		return
 	}
+
 	var dct *rotate.Block
 	if err := json.Unmarshal(cacheDataByte, &dct); err != nil {
 		result.FailWithNull(c)
 		return
 	}
-	sAngle, _ := strconv.ParseFloat(fmt.Sprintf("%v", angle), 64)
+
+	sAngle, err := strconv.ParseFloat(fmt.Sprintf("%v", rotateRequest.Angle), 64)
+	if err != nil {
+		result.FailWithNull(c)
+		return
+	}
+
 	chkRet := rotate.CheckAngle(int64(sAngle), int64(dct.Angle), 2)
 	if chkRet {
 		result.OkWithMessage("success", c)
 		return
 	}
+
 	result.FailWithMessage("fail", c)
 }
 

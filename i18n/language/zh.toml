@@ -52,4 +52,5 @@ ResetPasswordSuccess = "重置密码成功!"
 QRCodeGetFailed = "获取二维码失败!"
 QRCodeGetSuccess = "获取二维码成功!"
 QRCodeExpired = "二维码已过期!"
+InternalError = "内部错误!"
 

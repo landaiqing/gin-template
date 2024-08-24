@@ -98,58 +98,6 @@ func (UserAPI) QueryUserByPhone(c *gin.Context) {
 	result.OkWithData(user, c)
 }
 
-// AddUser 添加用户
-// @Summary 添加用户
-// @Tags 用户模块
-// @Param user body dto.AddUserRequest true "用户信息"
-// @Success 200 {string} json
-// @Router /api/user/add [post]
-func (UserAPI) AddUser(c *gin.Context) {
-	addUserRequest := dto.AddUserRequest{}
-	err := c.ShouldBindJSON(&addUserRequest)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
-
-	username := userService.QueryUserByUsername(addUserRequest.Username)
-	if !reflect.DeepEqual(username, model.ScaAuthUser{}) {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "UsernameExists"), c)
-		return
-	}
-
-	phone := userService.QueryUserByPhone(addUserRequest.Phone)
-	if !reflect.DeepEqual(phone, model.ScaAuthUser{}) {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneExists"), c)
-		return
-	}
-	encrypt, err := utils.Encrypt(addUserRequest.Password)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserError"), c)
-		return
-	}
-	uid := idgen.NextId()
-	uidStr := strconv.FormatInt(uid, 10)
-	user := model.ScaAuthUser{
-		UID:      &uidStr,
-		Username: &addUserRequest.Username,
-		Password: &encrypt,
-		Phone:    &addUserRequest.Phone,
-	}
-	_, err = userService.AddUser(user)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserError"), c)
-		return
-	}
-	_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserRoleError"), c)
-		return
-	}
-	result.OkWithMessage(ginI18n.MustGetMessage(c, "AddUserSuccess"), c)
-	return
-}
-
 // AccountLogin 账号登录
 // @Summary 账号登录
 // @Tags 用户模块
@@ -219,30 +167,11 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 		return
 	}
 
-	// 异步查询用户信息
-	userChan := make(chan *model.ScaAuthUser)
-	go func() {
-		user := userService.QueryUserByPhone(phone)
-		userChan <- &user
-	}()
-
-	// 异步获取验证码
-	codeChan := make(chan string)
-	go func() {
-		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
-		if code == nil {
-			codeChan <- ""
-		} else {
-			codeChan <- code.Val()
-		}
-	}()
-
-	user := <-userChan
-	code := <-codeChan
-
+	user := userService.QueryUserByPhone(phone)
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		// 未注册
-		if code == "" {
+		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
+		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
 		} else {
@@ -263,23 +192,31 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
 				return
 			}
+			err = global.Casbin.SavePolicy()
+			if err != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
+				return
+			}
 			handelUserLogin(addUser, request.AutoLogin, c)
 			return
 		}
 	} else {
-		if code == "" {
+		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
+		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
 		} else {
-			if captcha != code {
+			if captcha != code.Val() {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
 				return
 			} else {
-				handelUserLogin(*user, request.AutoLogin, c)
+				handelUserLogin(user, request.AutoLogin, c)
 				return
 			}
 		}
+
 	}
+
 }
 
 // RefreshHandler 刷新token
@@ -300,12 +237,8 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		return
 	}
 	parseRefreshToken, isUpd, err := utils.ParseRefreshToken(refreshToken)
-	if err != nil {
+	if err != nil || !isUpd {
 		global.LOG.Errorln(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
-		return
-	}
-	if !isUpd {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
@@ -316,7 +249,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 	}
 	tokenKey := constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID
 	token, err := redis.Get(tokenKey).Result()
-	if token == "" || err != nil {
+	if err != nil || token == "" {
 		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
@@ -335,17 +268,24 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 
 // handelUserLogin 处理用户登录
 func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
+	// 检查 user.UID 是否为 nil
+	if user.UID == nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		return
+	}
 	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID})
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
+
 	var days time.Duration
 	if autoLogin {
-		days = time.Hour * 24 * 7
+		days = 7 * 24 * time.Hour
 	} else {
-		days = time.Hour * 24 * 1
+		days = 24 * time.Hour
 	}
+
 	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID}, days)
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
@@ -353,13 +293,14 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 		ExpiresAt:    expiresAt,
 		UID:          user.UID,
 	}
-	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*1).Err()
-	if fail != nil {
+
+	err = redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, days).Err()
+	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
+
 	result.OkWithData(data, c)
-	return
 }
 
 // ResetPassword 重置密码
@@ -369,50 +310,86 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/user/reset_password [post]
 func (UserAPI) ResetPassword(c *gin.Context) {
-	resetPasswordRequest := dto.ResetPasswordRequest{}
-	err := c.ShouldBindJSON(&resetPasswordRequest)
-	if err != nil {
+	var resetPasswordRequest dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&resetPasswordRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
+
 	phone := resetPasswordRequest.Phone
 	captcha := resetPasswordRequest.Captcha
 	password := resetPasswordRequest.Password
 	repassword := resetPasswordRequest.Repassword
+
 	if phone == "" || captcha == "" || password == "" || repassword == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	isPhone := utils.IsPhone(phone)
-	if !isPhone {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
+
+	if !utils.IsPhone(phone) {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneError"), c)
 		return
 	}
-	code := redis.Get(constant.UserLoginSmsRedisKey + phone)
-	if code == nil {
+
+	if password != repassword {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordNotSame"), c)
+		return
+	}
+
+	if !utils.IsPassword(password) {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
+		return
+	}
+
+	// 使用事务确保验证码检查和密码更新的原子性
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "DatabaseError"), c)
+		return
+	}
+
+	code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	if code == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 		return
-	} else {
-		if captcha != code.Val() {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
-			return
-		}
 	}
+
+	if captcha != code {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
+		return
+	}
+
+	// 验证码检查通过后立即删除或标记为已使用
+	if err := redis.Del(constant.UserLoginSmsRedisKey + phone).Err(); err != nil {
+		tx.Rollback()
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordError"), c)
+		return
+	}
+
 	user := userService.QueryUserByPhone(phone)
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotRegister"), c)
 		return
 	}
+
 	encrypt, err := utils.Encrypt(password)
 	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordError")+": "+err.Error(), c)
+		return
+	}
+
+	if err := userService.UpdateUser(phone, encrypt); err != nil {
+		tx.Rollback()
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordError"), c)
 		return
 	}
-	wrong := userService.UpdateUser(phone, encrypt)
-	if wrong != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordError"), c)
-		return
-	}
+
+	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordSuccess"), c)
-	return
 }

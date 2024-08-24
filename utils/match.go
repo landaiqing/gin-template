@@ -30,3 +30,10 @@ func IsUsername(username string) bool {
 	match, _ := regexp.MatchString(phoneRegex, username)
 	return match
 }
+
+// IsPassword 密码的正则表达式
+func IsPassword(password string) bool {
+	phoneRegex := `^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,18}$`
+	match, _ := regexp.MatchString(phoneRegex, password)
+	return match
+}
