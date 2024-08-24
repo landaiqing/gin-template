@@ -9,7 +9,7 @@ const TableNameScaAuthUserSocial = "sca_auth_user_social"
 // ScaAuthUserSocial 社会用户信息表
 type ScaAuthUserSocial struct {
 	ID               int64      `gorm:"column:id;type:bigint(20);primaryKey;comment:主键ID" json:"id"`                                    // 主键ID
-	UserID           *int64     `gorm:"column:user_id;type:bigint(20);not null;comment:用户ID" json:"user_id"`                            // 用户ID
+	UserID           *string    `gorm:"column:user_id;type:varchar(255);not null;comment:用户ID" json:"user_id"`                          // 用户ID
 	UUID             *string    `gorm:"column:uuid;type:varchar(255);comment:第三方系统的唯一ID" json:"uuid"`                                   // 第三方系统的唯一ID
 	Source           *string    `gorm:"column:source;type:varchar(255);comment:第三方用户来源" json:"source"`                                  // 第三方用户来源
 	AccessToken      *string    `gorm:"column:access_token;type:varchar(255);comment:用户的授权令牌" json:"access_token"`                      // 用户的授权令牌

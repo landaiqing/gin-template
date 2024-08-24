@@ -11,7 +11,6 @@ import (
 	"github.com/wenlng/go-captcha/v2/click"
 	"github.com/wenlng/go-captcha/v2/rotate"
 	"github.com/wenlng/go-captcha/v2/slide"
-	"log"
 	"schisandra-cloud-album/global"
 )
 
@@ -47,13 +46,13 @@ func initTextCaptcha() {
 	// fonts
 	fonts, err := fzshengsksjw.GetFont()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	// background images
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	// thumb images
@@ -119,13 +118,13 @@ func initClickShapeCaptcha() {
 	// click.WithUseShapeOriginalColor(false) -> Random rewriting of graphic colors
 	shapeMaps, err := shapes.GetShapes()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	// background images
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	// set resources
@@ -146,12 +145,12 @@ func initsSlideCaptcha() {
 	// background images
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	graphs, err := tiles.GetTiles()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	var newGraphs = make([]*slide.GraphImage, 0, len(graphs))
@@ -182,7 +181,7 @@ func initRotateCaptcha() {
 	// background images
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	// set resources
@@ -203,12 +202,12 @@ func initSlideRegionCaptcha() {
 	// background image
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 
 	graphs, err := tiles.GetTiles()
 	if err != nil {
-		log.Fatalln(err)
+		global.LOG.Fatalln(err)
 	}
 	var newGraphs = make([]*slide.GraphImage, 0, len(graphs))
 	for i := 0; i < len(graphs); i++ {

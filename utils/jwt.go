@@ -9,14 +9,12 @@ import (
 )
 
 type RefreshJWTPayload struct {
-	UserID *string  `json:"user_id"`
-	RoleID []*int64 `json:"role_id"`
-	Type   *string  `json:"type" default:"refresh"`
+	UserID *string `json:"user_id"`
+	Type   *string `json:"type" default:"refresh"`
 }
 type AccessJWTPayload struct {
-	UserID *string  `json:"user_id"`
-	RoleID []*int64 `json:"role_id"`
-	Type   *string  `json:"type" default:"access"`
+	UserID *string `json:"user_id"`
+	Type   *string `json:"type" default:"access"`
 }
 type AccessJWTClaims struct {
 	AccessJWTPayload

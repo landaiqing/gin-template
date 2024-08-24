@@ -8,6 +8,13 @@ definitions:
       password:
         type: string
     type: object
+  dto.AddRoleToUserRequestDto:
+    properties:
+      role_key:
+        type: string
+      uid:
+        type: string
+    type: object
   dto.AddUserRequest:
     properties:
       password:
@@ -37,9 +44,52 @@ definitions:
       repassword:
         type: string
     type: object
+  dto.RoleRequestDto:
+    properties:
+      role_key:
+        type: string
+      role_name:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /api/auth/role/add_role_to_user:
+    post:
+      consumes:
+      - application/json
+      description: 给指定用户添加角色
+      parameters:
+      - description: 给指定用户添加角色
+        in: body
+        name: addRoleToUserRequestDto
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddRoleToUserRequestDto'
+      produces:
+      - application/json
+      responses: {}
+      summary: 给指定用户添加角色
+      tags:
+      - 角色
+  /api/auth/role/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建角色
+      parameters:
+      - description: 角色信息
+        in: body
+        name: roleRequestDto
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RoleRequestDto'
+      produces:
+      - application/json
+      responses: {}
+      summary: 创建角色
+      tags:
+      - 角色
   /api/auth/user/List:
     get:
       responses:

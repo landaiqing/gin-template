@@ -13,3 +13,11 @@ func (PermissionService) GetPermissionsByIds(ids []int64) ([]model.ScaAuthPermis
 	}
 	return permissions, nil
 }
+
+// CreatePermissions 批量创建权限
+func (PermissionService) CreatePermissions(permissions []model.ScaAuthPermission) error {
+	if err := global.DB.Model(&model.ScaAuthPermission{}).CreateInBatches(&permissions, len(permissions)).Error; err != nil {
+		return err
+	}
+	return nil
+}

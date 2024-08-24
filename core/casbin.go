@@ -14,13 +14,22 @@ var (
 
 func InitCasbin() {
 	once.Do(func() {
-		adapter, _ := gormadapter.NewAdapterByDBUseTableName(global.DB, "sca_sys_", "casbin_rule")
-		m, err := model.NewModelFromFile("config/rbac_model.pml")
+		adapter, err := gormadapter.NewAdapterByDBUseTableName(global.DB, global.CONFIG.Casbin.TablePrefix, global.CONFIG.Casbin.TableName)
 		if err != nil {
 			global.LOG.Error(err.Error())
 			panic(err)
 		}
-		e, _ := casbin.NewCachedEnforcer(m, adapter)
+		m, err := model.NewModelFromFile(global.CONFIG.Casbin.ModelPath)
+		if err != nil {
+			global.LOG.Error(err.Error())
+			panic(err)
+		}
+		e, err := casbin.NewCachedEnforcer(m, adapter)
+		if err != nil {
+			global.LOG.Error(err.Error())
+			panic(err)
+		}
+		e.EnableCache(true)
 		e.SetExpireTime(60 * 60)
 		err = e.LoadPolicy()
 		if err != nil {

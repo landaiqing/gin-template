@@ -142,100 +142,112 @@ func (OAuthAPI) GiteeCallback(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	// 通过 code, 获取 token
-	var tokenAuthUrl = GetGiteeTokenAuthUrl(code)
-	var token *Token
-	if token, err = GetGiteeToken(tokenAuthUrl); err != nil {
-		global.LOG.Error(err)
-		return
-	}
 
-	// 通过token，获取用户信息
-	var userInfo map[string]interface{}
-	if userInfo, err = GetGiteeUserInfo(token); err != nil {
-		global.LOG.Error(err)
-		return
-	}
+	// 异步获取 token
+	var tokenChan = make(chan *Token)
+	var errChan = make(chan error)
+	go func() {
+		var tokenAuthUrl = GetGiteeTokenAuthUrl(code)
+		token, err := GetGiteeToken(tokenAuthUrl)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		tokenChan <- token
+	}()
 
-	userInfoBytes, err := json.Marshal(userInfo)
-	if err != nil {
-		global.LOG.Error(err)
-		return
-	}
-	var giteeUser GiteeUser
-	err = json.Unmarshal(userInfoBytes, &giteeUser)
-	if err != nil {
-		global.LOG.Error(err)
-		return
-	}
+	// 异步获取用户信息
+	var userInfoChan = make(chan map[string]interface{})
+	go func() {
+		token := <-tokenChan
+		if token == nil {
+			errChan <- errors.New("failed to get token")
+			return
+		}
+		userInfo, err := GetGiteeUserInfo(token)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		userInfoChan <- userInfo
+	}()
 
-	Id := strconv.Itoa(giteeUser.ID)
-	userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGitee)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		// 第一次登录，创建用户
-		uid := idgen.NextId()
-		uidStr := strconv.FormatInt(uid, 10)
-		user := model.ScaAuthUser{
-			UID:      &uidStr,
-			Username: &giteeUser.Login,
-			Nickname: &giteeUser.Name,
-			Avatar:   &giteeUser.AvatarURL,
-			Blog:     &giteeUser.Blog,
-			Email:    &giteeUser.Email,
-		}
-		addUser, err := userService.AddUser(user)
+	// 等待结果
+	select {
+	case err = <-errChan:
+		global.LOG.Error(err)
+		return
+	case userInfo := <-userInfoChan:
+		userInfoBytes, err := json.Marshal(userInfo)
 		if err != nil {
 			global.LOG.Error(err)
 			return
 		}
-		gitee := enum.OAuthSourceGitee
-		userSocial = model.ScaAuthUserSocial{
-			UserID: &addUser.ID,
-			UUID:   &Id,
-			Source: &gitee,
-		}
-		err = userSocialService.AddUserSocial(userSocial)
+		var giteeUser GiteeUser
+		err = json.Unmarshal(userInfoBytes, &giteeUser)
 		if err != nil {
 			global.LOG.Error(err)
 			return
 		}
-		userRole := model.ScaAuthUserRole{
-			UserID: uidStr,
-			RoleID: enum.User,
+
+		Id := strconv.Itoa(giteeUser.ID)
+		userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGitee)
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			db := global.DB
+			tx := db.Begin() // 开始事务
+			if tx.Error != nil {
+				global.LOG.Error(tx.Error)
+				return
+			}
+			defer func() {
+				if r := recover(); r != nil {
+					tx.Rollback()
+				}
+			}()
+			// 第一次登录，创建用户
+			uid := idgen.NextId()
+			uidStr := strconv.FormatInt(uid, 10)
+			user := model.ScaAuthUser{
+				UID:      &uidStr,
+				Username: &giteeUser.Login,
+				Nickname: &giteeUser.Name,
+				Avatar:   &giteeUser.AvatarURL,
+				Blog:     &giteeUser.Blog,
+				Email:    &giteeUser.Email,
+			}
+			addUser, err := userService.AddUser(user)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			gitee := enum.OAuthSourceGitee
+			userSocial = model.ScaAuthUserSocial{
+				UserID: &uidStr,
+				UUID:   &Id,
+				Source: &gitee,
+			}
+			err = userSocialService.AddUserSocial(userSocial)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			if err := tx.Commit().Error; err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			HandleLoginResponse(c, *addUser.UID)
+		} else {
+			HandleLoginResponse(c, *userSocial.UserID)
 		}
-		err = userRoleService.AddUserRole(userRole)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		res, data := HandelUserLogin(addUser)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
-	} else {
-		user, err := userService.QueryUserById(userSocial.UserID)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		res, data := HandelUserLogin(user)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
+		return
 	}
-	return
 }

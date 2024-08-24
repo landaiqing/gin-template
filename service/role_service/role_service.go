@@ -13,3 +13,11 @@ func (RoleService) GetRoleListByIds(id []*int64) ([]model.ScaAuthRole, error) {
 	}
 	return roles, nil
 }
+
+// AddRole 新增角色
+func (RoleService) AddRole(role model.ScaAuthRole) error {
+	if err := global.DB.Create(&role).Error; err != nil {
+		return err
+	}
+	return nil
+}

@@ -12,8 +12,6 @@ func MakeMigration() {
 		&model.ScaAuthUser{},
 		&model.ScaAuthPermission{},
 		&model.ScaAuthRole{},
-		&model.ScaAuthRolePermission{},
-		&model.ScaAuthUserRole{},
 		&model.ScaAuthUserDevice{},
 		&model.ScaAuthUserSocial{},
 	)

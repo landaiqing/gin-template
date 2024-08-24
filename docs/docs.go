@@ -15,6 +15,60 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/role/add_role_to_user": {
+            "post": {
+                "description": "给指定用户添加角色",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "角色"
+                ],
+                "summary": "给指定用户添加角色",
+                "parameters": [
+                    {
+                        "description": "给指定用户添加角色",
+                        "name": "addRoleToUserRequestDto",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddRoleToUserRequestDto"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/auth/role/create": {
+            "post": {
+                "description": "创建角色",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "角色"
+                ],
+                "summary": "创建角色",
+                "parameters": [
+                    {
+                        "description": "角色信息",
+                        "name": "roleRequestDto",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RoleRequestDto"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/api/auth/user/List": {
             "get": {
                 "tags": [
@@ -735,6 +789,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AddRoleToUserRequestDto": {
+            "type": "object",
+            "properties": {
+                "role_key": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.AddUserRequest": {
             "type": "object",
             "properties": {
@@ -776,6 +841,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "repassword": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RoleRequestDto": {
+            "type": "object",
+            "properties": {
+                "role_key": {
+                    "type": "string"
+                },
+                "role_name": {
                     "type": "string"
                 }
             }

@@ -13,10 +13,10 @@ func InitWechat() {
 		Secret: global.CONFIG.Wechat.AppSecret,
 		Token:  global.CONFIG.Wechat.Token,
 		AESKey: global.CONFIG.Wechat.AESKey,
-		//Log: officialAccount.Log{
-		//	Level: "debug",
-		//	File:  "./wechat.log",
-		//},
+		Log: officialAccount.Log{
+			Level: "error",
+			File:  "./wechat.log",
+		},
 		ResponseType: os.Getenv("response_type"),
 		HttpDebug:    true,
 		Debug:        true,
@@ -27,6 +27,7 @@ func InitWechat() {
 		}),
 	})
 	if err != nil {
+		global.LOG.Error(err.Error())
 		panic(err)
 	}
 	global.Wechat = OfficialAccountApp

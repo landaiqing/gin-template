@@ -26,8 +26,11 @@ import (
 	"schisandra-cloud-album/utils"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var mu sync.Mutex
 
 // GenerateClientId 生成客户端ID
 // @Summary 生成客户端ID
@@ -44,6 +47,9 @@ func (OAuthAPI) GenerateClientId(c *gin.Context) {
 	if ip == "" {
 		ip = c.ClientIP()
 	}
+	// 加锁
+	mu.Lock()
+	defer mu.Unlock()
 
 	// 从Redis获取客户端ID
 	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
@@ -70,10 +76,7 @@ func (OAuthAPI) GenerateClientId(c *gin.Context) {
 // @Router /api/oauth/callback_notify [POST]
 func (OAuthAPI) CallbackNotify(c *gin.Context) {
 	rs, err := global.Wechat.Server.Notify(c.Request, func(event contract.EventInterface) interface{} {
-		fmt.Dump("event", event)
-
 		switch event.GetMsgType() {
-
 		case models2.CALLBACK_MSG_TYPE_EVENT:
 			switch event.GetEvent() {
 			case models.CALLBACK_EVENT_SUBSCRIBE:
@@ -122,7 +125,6 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 				println(err.Error())
 				return "error"
 			}
-			fmt.Dump(msg)
 		}
 		return messages.NewText("ok")
 
@@ -177,6 +179,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 		data := response.ResponseQRCodeCreate{}
 		err := json.Unmarshal([]byte(qrcode), &data)
 		if err != nil {
+			global.LOG.Error(err)
 			return
 		}
 		result.OK(ginI18n.MustGetMessage(c, "QRCodeGetSuccess"), data.Url, c)
@@ -184,17 +187,20 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	}
 	data, err := global.Wechat.QRCode.Temporary(c.Request.Context(), clientId, 30*24*3600)
 	if err != nil {
+		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
 	serializedData, err := json.Marshal(data)
 	if err != nil {
+		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
 	wrong := redis.Set(constant.UserLoginQrcodeRedisKey+ip+":"+clientId, serializedData, time.Hour*24*30).Err()
 
 	if wrong != nil {
+		global.LOG.Error(wrong)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
@@ -208,45 +214,98 @@ func wechatLoginHandler(openId string, clientId string) bool {
 	}
 	authUserSocial, err := userSocialService.QueryUserSocialByOpenID(openId, enum.OAuthSourceWechat)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		tx := global.DB.Begin()
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
 		createUser := model.ScaAuthUser{
 			UID:      &uidStr,
 			Username: &openId,
 		}
-		addUser, err := userService.AddUser(createUser)
-		if err != nil {
+
+		// 异步添加用户
+		addUserChan := make(chan *model.ScaAuthUser, 1)
+		errChan := make(chan error, 1)
+		go func() {
+			addUser, err := userService.AddUser(createUser)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			addUserChan <- &addUser
+		}()
+
+		var addUser *model.ScaAuthUser
+		select {
+		case addUser = <-addUserChan:
+		case err := <-errChan:
+			tx.Rollback()
+			global.LOG.Error(err)
 			return false
 		}
+
 		wechat := enum.OAuthSourceWechat
 		userSocial := model.ScaAuthUserSocial{
-			UserID: &addUser.ID,
+			UserID: &uidStr,
 			OpenID: &openId,
 			Source: &wechat,
 		}
-		wrong := userSocialService.AddUserSocial(userSocial)
-		if wrong != nil {
-			return false
+
+		// 异步添加用户社交信息
+		wrongChan := make(chan error, 1)
+		go func() {
+			wrong := userSocialService.AddUserSocial(userSocial)
+			wrongChan <- wrong
+		}()
+
+		select {
+		case wrong := <-wrongChan:
+			if wrong != nil {
+				tx.Rollback()
+				global.LOG.Error(wrong)
+				return false
+			}
 		}
-		userRole := model.ScaAuthUserRole{
-			UserID: uidStr,
-			RoleID: enum.User,
+
+		// 异步添加角色
+		roleErrChan := make(chan error, 1)
+		go func() {
+			_, err := global.Casbin.AddRoleForUser(uidStr, enum.User)
+			roleErrChan <- err
+		}()
+
+		select {
+		case err := <-roleErrChan:
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return false
+			}
 		}
-		e := userRoleService.AddUserRole(userRole)
-		if e != nil {
-			return false
+
+		// 异步处理用户登录
+		resChan := make(chan bool, 1)
+		go func() {
+			res := handelUserLogin(*addUser.UID, clientId)
+			resChan <- res
+		}()
+
+		select {
+		case res := <-resChan:
+			if !res {
+				tx.Rollback()
+				return false
+			}
 		}
-		res := handelUserLogin(addUser, clientId)
-		if !res {
-			return false
-		}
+		tx.Commit()
 		return true
 	} else {
-		user, err := userService.QueryUserById(authUserSocial.UserID)
-		if err != nil {
-			return false
-		}
-		res := handelUserLogin(user, clientId)
+		res := handelUserLogin(*authUserSocial.UserID, clientId)
 		if !res {
 			return false
 		}
@@ -255,70 +314,47 @@ func wechatLoginHandler(openId string, clientId string) bool {
 }
 
 // handelUserLogin 处理用户登录
-func handelUserLogin(user model.ScaAuthUser, clientId string) bool {
-	ids, err := userRoleService.GetUserRoleIdsByUserId(user.ID)
-	if err != nil {
-		return false
-	}
-	permissionIds := rolePermissionService.QueryPermissionIdsByRoleId(ids)
-	permissions, err := permissionServiceService.GetPermissionsByIds(permissionIds)
-	if err != nil {
-		return false
-	}
-	serializedPermissions, err := json.Marshal(permissions)
-	if err != nil {
-		return false
-	}
-	wrong := redis.Set(constant.UserAuthPermissionRedisKey+*user.UID, serializedPermissions, 0).Err()
-	if wrong != nil {
-		return false
-	}
-	roleList, err := roleService.GetRoleListByIds(ids)
-	if err != nil {
-		return false
-	}
-	serializedRoleList, err := json.Marshal(roleList)
-	if err != nil {
-		return false
-	}
-	er := redis.Set(constant.UserAuthRoleRedisKey+*user.UID, serializedRoleList, 0).Err()
-	if er != nil {
-		return false
-	}
-	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
-	if err != nil {
-		return false
-	}
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, time.Hour*24*7)
-	data := dto.ResponseData{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
-		UID:          user.UID,
-	}
-	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
-	if fail != nil {
-		return false
-	}
-	responseData := map[string]interface{}{
-		"code":    0,
-		"message": "success",
-		"data":    data,
-		"success": true,
-	}
-	tokenData, err := json.Marshal(responseData)
-	if err != nil {
-		return false
-	}
-	// gws方式发送消息
-	err = websocket_api.Handler.SendMessageToClient(clientId, tokenData)
-	if err != nil {
-		return false
-	}
-	// gorilla websocket方式发送消息
-	//res := websocket_api.SendMessageData(clientId, responseData)
-	//if !res {
-	//	return false
-	//}
-	return true
+func handelUserLogin(userId string, clientId string) bool {
+	resultChan := make(chan bool, 1)
+
+	go func() {
+		accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: &userId})
+		if err != nil {
+			resultChan <- false
+			return
+		}
+		refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
+		data := dto.ResponseData{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			ExpiresAt:    expiresAt,
+			UID:          &userId,
+		}
+		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, data, time.Hour*24*7).Err()
+		if fail != nil {
+			resultChan <- false
+			return
+		}
+		responseData := map[string]interface{}{
+			"code":    0,
+			"message": "success",
+			"data":    data,
+			"success": true,
+		}
+		tokenData, err := json.Marshal(responseData)
+		if err != nil {
+			resultChan <- false
+			return
+		}
+		// gws方式发送消息
+		err = websocket_api.Handler.SendMessageToClient(clientId, tokenData)
+		if err != nil {
+			global.LOG.Error(err)
+			resultChan <- false
+			return
+		}
+		resultChan <- true
+	}()
+
+	return <-resultChan
 }

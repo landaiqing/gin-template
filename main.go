@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	// 初始化配置
 	core.InitConfig()      // 读取配置文件
 	core.InitLogger()      // 初始化日志

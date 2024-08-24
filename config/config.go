@@ -11,4 +11,5 @@ type Config struct {
 	Wechat  Wechat  `yaml:"wechat"`
 	OAuth   OAuth   `yaml:"oauth"`
 	Swagger Swagger `yaml:"swagger"`
+	Casbin  Casbin  `yaml:"casbin"`
 }

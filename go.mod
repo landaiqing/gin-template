@@ -6,12 +6,16 @@ require (
 	github.com/ArtisanCloud/PowerLibs/v3 v3.2.5
 	github.com/ArtisanCloud/PowerWeChat/v3 v3.2.38
 	github.com/BurntSushi/toml v1.3.2
+	github.com/casbin/casbin/v2 v2.98.0
+	github.com/casbin/gorm-adapter/v3 v3.28.0
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-contrib/i18n v1.1.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/websocket v1.5.3
+	github.com/juju/ratelimit v1.0.2
+	github.com/lxzan/gws v1.8.5
 	github.com/pkg6/go-sms v0.1.2
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/satori/go.uuid v1.2.0
@@ -37,8 +41,6 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/bytedance/sonic v1.12.0 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
-	github.com/casbin/casbin/v2 v2.98.0 // indirect
-	github.com/casbin/gorm-adapter/v3 v3.28.0 // indirect
 	github.com/casbin/govaluate v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
@@ -71,11 +73,9 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/juju/ratelimit v1.0.2 // indirect
 	github.com/klauspost/compress v1.17.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/lxzan/gws v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/microsoft/go-mssqldb v1.6.0 // indirect

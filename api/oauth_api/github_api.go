@@ -148,99 +148,116 @@ func (OAuthAPI) Callback(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	// 通过 code, 获取 token
-	var tokenAuthUrl = GetTokenAuthUrl(code)
-	var token *Token
-	if token, err = GetToken(tokenAuthUrl); err != nil {
-		global.LOG.Error(err)
-		return
-	}
 
-	// 通过token，获取用户信息
-	var userInfo map[string]interface{}
-	if userInfo, err = GetUserInfo(token); err != nil {
+	// 使用channel来接收异步操作的结果
+	tokenChan := make(chan *Token)
+	userInfoChan := make(chan map[string]interface{})
+	errChan := make(chan error)
+
+	// 异步获取token
+	go func() {
+		var tokenAuthUrl = GetTokenAuthUrl(code)
+		token, err := GetToken(tokenAuthUrl)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		tokenChan <- token
+	}()
+
+	// 异步获取用户信息
+	go func() {
+		token := <-tokenChan
+		if token == nil {
+			return
+		}
+		userInfo, err := GetUserInfo(token)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		userInfoChan <- userInfo
+	}()
+
+	select {
+	case err = <-errChan:
 		global.LOG.Error(err)
 		return
-	}
-	//json 转 struct
-	userInfoBytes, err := json.Marshal(userInfo)
-	if err != nil {
-		global.LOG.Error(err)
+	case userInfo := <-userInfoChan:
+		if userInfo == nil {
+			global.LOG.Error(<-errChan)
+			return
+		}
+		// 继续处理用户信息
+		userInfoBytes, err := json.Marshal(<-userInfoChan)
+		if err != nil {
+			global.LOG.Error(err)
+			return
+		}
+		var gitHubUser GitHubUser
+		err = json.Unmarshal(userInfoBytes, &gitHubUser)
+		if err != nil {
+			global.LOG.Error(err)
+			return
+		}
+		Id := strconv.Itoa(gitHubUser.ID)
+		userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGithub)
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			db := global.DB
+			tx := db.Begin() // 开始事务
+			if tx.Error != nil {
+				global.LOG.Error(tx.Error)
+				return
+			}
+			defer func() {
+				if r := recover(); r != nil {
+					tx.Rollback()
+				}
+			}()
+			// 第一次登录，创建用户
+			uid := idgen.NextId()
+			uidStr := strconv.FormatInt(uid, 10)
+			user := model.ScaAuthUser{
+				UID:      &uidStr,
+				Username: &gitHubUser.Login,
+				Nickname: &gitHubUser.Name,
+				Avatar:   &gitHubUser.AvatarURL,
+				Blog:     &gitHubUser.Blog,
+				Email:    &gitHubUser.Email,
+			}
+			addUser, err := userService.AddUser(user)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			github := enum.OAuthSourceGithub
+			userSocial = model.ScaAuthUserSocial{
+				UserID: &uidStr,
+				UUID:   &Id,
+				Source: &github,
+			}
+			err = userSocialService.AddUserSocial(userSocial)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+			if err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			if err := tx.Commit().Error; err != nil {
+				tx.Rollback()
+				global.LOG.Error(err)
+				return
+			}
+			HandleLoginResponse(c, *addUser.UID)
+		} else {
+			HandleLoginResponse(c, *userSocial.UserID)
+		}
 		return
 	}
-	var gitHubUser GitHubUser
-	err = json.Unmarshal(userInfoBytes, &gitHubUser)
-	if err != nil {
-		global.LOG.Error(err)
-		return
-	}
-	Id := strconv.Itoa(gitHubUser.ID)
-	userSocial, err := userSocialService.QueryUserSocialByUUID(Id, enum.OAuthSourceGithub)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		// 第一次登录，创建用户
-		uid := idgen.NextId()
-		uidStr := strconv.FormatInt(uid, 10)
-		user := model.ScaAuthUser{
-			UID:      &uidStr,
-			Username: &gitHubUser.Login,
-			Nickname: &gitHubUser.Name,
-			Avatar:   &gitHubUser.AvatarURL,
-			Blog:     &gitHubUser.Blog,
-			Email:    &gitHubUser.Email,
-		}
-		addUser, err := userService.AddUser(user)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		github := enum.OAuthSourceGithub
-		userSocial = model.ScaAuthUserSocial{
-			UserID: &addUser.ID,
-			UUID:   &Id,
-			Source: &github,
-		}
-		err = userSocialService.AddUserSocial(userSocial)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		userRole := model.ScaAuthUserRole{
-			UserID: uidStr,
-			RoleID: enum.User,
-		}
-		err = userRoleService.AddUserRole(userRole)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		res, data := HandelUserLogin(addUser)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
-	} else {
-		user, err := userService.QueryUserById(userSocial.UserID)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		res, data := HandelUserLogin(user)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
-	}
-	return
 }

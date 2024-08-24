@@ -173,23 +173,61 @@ func (OAuthAPI) QQCallback(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
+
 	// 通过 code, 获取 token
 	var tokenAuthUrl = GetQQTokenAuthUrl(code)
+	tokenChan := make(chan *QQToken)
+	errChan := make(chan error)
+	go func() {
+		token, err := GetQQToken(tokenAuthUrl)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		tokenChan <- token
+	}()
 	var token *QQToken
-	if token, err = GetQQToken(tokenAuthUrl); err != nil {
+	select {
+	case token = <-tokenChan:
+	case err = <-errChan:
 		global.LOG.Error(err)
 		return
 	}
+
 	// 通过 token，获取 openid
-	authQQme, err := GetQQUserOpenID(token)
-	if err != nil {
+	openIDChan := make(chan *AuthQQme)
+	errChan = make(chan error)
+	go func() {
+		authQQme, err := GetQQUserOpenID(token)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		openIDChan <- authQQme
+	}()
+	var authQQme *AuthQQme
+	select {
+	case authQQme = <-openIDChan:
+	case err = <-errChan:
 		global.LOG.Error(err)
 		return
 	}
 
 	// 通过token，获取用户信息
+	userInfoChan := make(chan map[string]interface{})
+	errChan = make(chan error)
+	go func() {
+		userInfo, err := GetQQUserUserInfo(token, authQQme.OpenID)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		userInfoChan <- userInfo
+	}()
 	var userInfo map[string]interface{}
-	if userInfo, err = GetQQUserUserInfo(token, authQQme.OpenID); err != nil {
+	select {
+	case userInfo = <-userInfoChan:
+	case err = <-errChan:
 		global.LOG.Error(err)
 		return
 	}
@@ -205,8 +243,20 @@ func (OAuthAPI) QQCallback(c *gin.Context) {
 		global.LOG.Error(err)
 		return
 	}
+
 	userSocial, err := userSocialService.QueryUserSocialByOpenID(authQQme.OpenID, enum.OAuthSourceQQ)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		db := global.DB
+		tx := db.Begin() // 开始事务
+		if tx.Error != nil {
+			global.LOG.Error(tx.Error)
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
@@ -221,59 +271,36 @@ func (OAuthAPI) QQCallback(c *gin.Context) {
 		}
 		addUser, err := userService.AddUser(user)
 		if err != nil {
+			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
 		qq := enum.OAuthSourceQQ
 		userSocial = model.ScaAuthUserSocial{
-			UserID: &addUser.ID,
+			UserID: &uidStr,
 			OpenID: &authQQme.OpenID,
 			Source: &qq,
 		}
 		err = userSocialService.AddUserSocial(userSocial)
 		if err != nil {
+			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
-		userRole := model.ScaAuthUserRole{
-			UserID: uidStr,
-			RoleID: enum.User,
-		}
-		err = userRoleService.AddUserRole(userRole)
+		_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
 		if err != nil {
+			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
-		res, data := HandelUserLogin(addUser)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
+		HandleLoginResponse(c, *addUser.UID)
 		return
 	} else {
-		user, err := userService.QueryUserById(userSocial.UserID)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		res, data := HandelUserLogin(user)
-		if !res {
-			return
-		}
-		tokenData, err := json.Marshal(data)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
-		return
+		HandleLoginResponse(c, *userSocial.UserID)
 	}
-
 }

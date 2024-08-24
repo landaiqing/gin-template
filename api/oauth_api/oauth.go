@@ -2,10 +2,13 @@ package oauth_api
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"net/http"
 	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
-	"schisandra-cloud-album/model"
+	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/service"
 	"schisandra-cloud-album/utils"
 	"time"
@@ -14,11 +17,7 @@ import (
 type OAuthAPI struct{}
 
 var userService = service.Service.UserService
-var userRoleService = service.Service.UserRoleService
 var userSocialService = service.Service.UserSocialService
-var rolePermissionService = service.Service.RolePermissionService
-var permissionServiceService = service.Service.PermissionService
-var roleService = service.Service.RoleService
 
 type Token struct {
 	AccessToken string `json:"access_token"`
@@ -31,50 +30,82 @@ var script = `
         </script>
         `
 
+func HandleLoginResponse(c *gin.Context, uid string) {
+	res, data := HandelUserLogin(uid)
+	if !res {
+		return
+	}
+	tokenData, err := json.Marshal(data)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
+	return
+}
+
 // HandelUserLogin 处理用户登录
-func HandelUserLogin(user model.ScaAuthUser) (bool, map[string]interface{}) {
-	ids, err := userRoleService.GetUserRoleIdsByUserId(user.ID)
-	if err != nil {
+func HandelUserLogin(userId string) (bool, map[string]interface{}) {
+	// 使用goroutine生成accessToken
+	accessTokenChan := make(chan string)
+	errChan := make(chan error)
+	go func() {
+		accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: &userId})
+		if err != nil {
+			errChan <- err
+			return
+		}
+		accessTokenChan <- accessToken
+	}()
+
+	// 使用goroutine生成refreshToken
+	refreshTokenChan := make(chan string)
+	expiresAtChan := make(chan int64)
+	go func() {
+		refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
+		refreshTokenChan <- refreshToken
+		expiresAtChan <- expiresAt
+	}()
+
+	// 等待accessToken和refreshToken生成完成
+	var accessToken string
+	var refreshToken string
+	var expiresAt int64
+	var err error
+	select {
+	case accessToken = <-accessTokenChan:
+	case err = <-errChan:
+		global.LOG.Error(err)
 		return false, nil
 	}
-	permissionIds := rolePermissionService.QueryPermissionIdsByRoleId(ids)
-	permissions, err := permissionServiceService.GetPermissionsByIds(permissionIds)
-	if err != nil {
-		return false, nil
+	select {
+	case refreshToken = <-refreshTokenChan:
+	case expiresAt = <-expiresAtChan:
 	}
-	serializedPermissions, err := json.Marshal(permissions)
-	if err != nil {
-		return false, nil
-	}
-	wrong := redis.Set(constant.UserAuthPermissionRedisKey+*user.UID, serializedPermissions, 0).Err()
-	if wrong != nil {
-		return false, nil
-	}
-	roleList, err := roleService.GetRoleListByIds(ids)
-	if err != nil {
-		return false, nil
-	}
-	serializedRoleList, err := json.Marshal(roleList)
-	if err != nil {
-		return false, nil
-	}
-	er := redis.Set(constant.UserAuthRoleRedisKey+*user.UID, serializedRoleList, 0).Err()
-	if er != nil {
-		return false, nil
-	}
-	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
-	if err != nil {
-		return false, nil
-	}
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, time.Hour*24*7)
+
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
-		UID:          user.UID,
+		UID:          &userId,
 	}
-	fail := redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, time.Hour*24*7).Err()
-	if fail != nil {
+
+	// 使用goroutine将数据存入redis
+	redisErrChan := make(chan error)
+	go func() {
+		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, data, time.Hour*24*7).Err()
+		if fail != nil {
+			redisErrChan <- fail
+			return
+		}
+		redisErrChan <- nil
+	}()
+
+	// 等待redis操作完成
+	redisErr := <-redisErrChan
+	if redisErr != nil {
+		global.LOG.Error(redisErr)
 		return false, nil
 	}
 	responseData := map[string]interface{}{

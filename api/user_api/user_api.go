@@ -1,7 +1,6 @@
 package user_api
 
 import (
-	"encoding/json"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/yitter/idgenerator-go/idgen"
@@ -20,10 +19,6 @@ import (
 )
 
 var userService = service.Service.UserService
-var userRoleService = service.Service.UserRoleService
-var rolePermissionService = service.Service.RolePermissionService
-var permissionServiceService = service.Service.PermissionService
-var roleService = service.Service.RoleService
 
 // GetUserList
 // @Summary 获取所有用户列表
@@ -146,12 +141,8 @@ func (UserAPI) AddUser(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserError"), c)
 		return
 	}
-	userRole := model.ScaAuthUserRole{
-		UserID: uidStr,
-		RoleID: enum.User,
-	}
-	e := userRoleService.AddUserRole(userRole)
-	if e != nil {
+	_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "AddUserRoleError"), c)
 		return
 	}
@@ -258,11 +249,30 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 		return
 	}
 
-	user := userService.QueryUserByPhone(phone)
-	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
-		// 未注册
+	// 异步查询用户信息
+	userChan := make(chan *model.ScaAuthUser)
+	go func() {
+		user := userService.QueryUserByPhone(phone)
+		userChan <- &user
+	}()
+
+	// 异步获取验证码
+	codeChan := make(chan string)
+	go func() {
 		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
 		if code == nil {
+			codeChan <- ""
+		} else {
+			codeChan <- code.Val()
+		}
+	}()
+
+	user := <-userChan
+	code := <-codeChan
+
+	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
+		// 未注册
+		if code == "" {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
 		} else {
@@ -277,35 +287,29 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
 				return
 			}
-			userRole := model.ScaAuthUserRole{
-				UserID: uidStr,
-				RoleID: enum.User,
-			}
-			e := userRoleService.AddUserRole(userRole)
-			if e != nil {
-				result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+
+			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+			if err != nil {
+				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
 				return
 			}
 			handelUserLogin(addUser, request.AutoLogin, c)
 			return
 		}
 	} else {
-		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
-		if code == nil {
+		if code == "" {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
 		} else {
-			if captcha != code.Val() {
+			if captcha != code {
 				result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
 				return
 			} else {
-				handelUserLogin(user, request.AutoLogin, c)
+				handelUserLogin(*user, request.AutoLogin, c)
 				return
 			}
 		}
-
 	}
-
 }
 
 // RefreshHandler 刷新token
@@ -333,7 +337,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		return
 	}
 	if isUpd {
-		accessTokenString, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: parseRefreshToken.UserID, RoleID: parseRefreshToken.RoleID})
+		accessTokenString, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: parseRefreshToken.UserID})
 		if err != nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 			return
@@ -362,42 +366,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 
 // handelUserLogin 处理用户登录
 func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
-	ids, err := userRoleService.GetUserRoleIdsByUserId(user.ID)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	permissionIds := rolePermissionService.QueryPermissionIdsByRoleId(ids)
-	permissions, err := permissionServiceService.GetPermissionsByIds(permissionIds)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	serializedPermissions, err := json.Marshal(permissions)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	wrong := redis.Set(constant.UserAuthPermissionRedisKey+*user.UID, serializedPermissions, 0).Err()
-	if wrong != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	roleList, err := roleService.GetRoleListByIds(ids)
-	if err != nil {
-		return
-	}
-	serializedRoleList, err := json.Marshal(roleList)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	er := redis.Set(constant.UserAuthRoleRedisKey+*user.UID, serializedRoleList, 0).Err()
-	if er != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID, RoleID: ids})
+	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID})
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
@@ -408,7 +377,7 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 	} else {
 		days = time.Hour * 24 * 1
 	}
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID, RoleID: ids}, days)
+	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID}, days)
 	data := dto.ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

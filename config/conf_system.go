@@ -8,6 +8,7 @@ type System struct {
 	Port string `yaml:"port"` //端口号
 	Env  string `yaml:"env"`  //环境
 	Web  string `yaml:"web"`  //web地址
+	Ip   string `yaml:"ip"`   //ip地址
 }
 
 func (s *System) Addr() string {
