@@ -17,7 +17,7 @@ func UserRouter(router *gin.RouterGroup) {
 		userGroup.POST("/add", userApi.AddUser)
 		userGroup.POST("/reset_password", userApi.ResetPassword)
 	}
-	authGroup := router.Group("auth").Use(middleware.JWTAuthMiddleware())
+	authGroup := router.Group("auth").Use(middleware.JWTAuthMiddleware()).Use(middleware.CasbinMiddleware())
 	{
 		authGroup.GET("/user/list", userApi.GetUserList)
 		authGroup.GET("/user/query_by_uuid", userApi.QueryUserByUuid)
