@@ -18,6 +18,7 @@ func main() {
 	core.InitIDGenerator() // 初始化ID生成器
 	core.InitWechat()      // 初始化微信
 	core.InitCasbin()      // 初始化Casbin
+	core.InitIP2Region()   // 初始化IP2Region
 	// 命令行参数绑定
 	option := cmd.Parse()
 	if cmd.IsStopWeb(&option) {
@@ -26,7 +27,7 @@ func main() {
 	}
 	r := router.InitRouter() // 初始化路由
 	addr := global.CONFIG.System.Addr()
-	global.LOG.Info("Server run on ", addr)
+
 	err := r.Run(addr)
 	if err != nil {
 		global.LOG.Fatalf(err.Error())

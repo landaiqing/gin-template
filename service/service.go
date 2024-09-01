@@ -3,6 +3,7 @@ package service
 import (
 	"schisandra-cloud-album/service/permission_service"
 	"schisandra-cloud-album/service/role_service"
+	"schisandra-cloud-album/service/user_device_service"
 	"schisandra-cloud-album/service/user_service"
 	"schisandra-cloud-album/service/user_social_service"
 )
@@ -13,6 +14,7 @@ type Services struct {
 	RoleService       role_service.RoleService
 	PermissionService permission_service.PermissionService
 	UserSocialService user_social_service.UserSocialService
+	UserDeviceService user_device_service.UserDeviceService
 }
 
 // Service new函数实例化，实例化完成后会返回结构体地指针类型

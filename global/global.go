@@ -3,6 +3,7 @@ package global
 import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount"
 	"github.com/casbin/casbin/v2"
+	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/wenlng/go-captcha/v2/click"
@@ -26,4 +27,5 @@ var (
 	REDIS              *redis.Client                    // redis连接
 	Wechat             *officialAccount.OfficialAccount // 微信公众号
 	Casbin             *casbin.CachedEnforcer           // casbin权限管理器
+	IP2Location        *xdb.Searcher                    // IP地址定位
 )

@@ -1,9 +1,12 @@
 package user_api
 
 import (
+	"errors"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
+	"github.com/mssola/useragent"
 	"github.com/yitter/idgenerator-go/idgen"
+	"gorm.io/gorm"
 	"reflect"
 	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
@@ -19,6 +22,7 @@ import (
 )
 
 var userService = service.Service.UserService
+var userDeviceService = service.Service.UserDeviceService
 
 // GetUserList
 // @Summary 获取所有用户列表
@@ -161,62 +165,87 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneAndCaptchaNotEmpty"), c)
 		return
 	}
-	isPhone := utils.IsPhone(phone)
-	if !isPhone {
+	if !utils.IsPhone(phone) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
 		return
 	}
 
-	user := userService.QueryUserByPhone(phone)
+	userChan := make(chan model.ScaAuthUser)
+	go func() {
+		user := userService.QueryUserByPhone(phone)
+		userChan <- user
+	}()
+
+	user := <-userChan
+	close(userChan)
+
 	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
 		// 未注册
-		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
+		codeChan := make(chan *string)
+		go func() {
+			code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+			codeChan <- &code
+		}()
+
+		code := <-codeChan
+		close(codeChan)
+
 		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
-		} else {
-			uid := idgen.NextId()
-			uidStr := strconv.FormatInt(uid, 10)
-			createUser := model.ScaAuthUser{
-				UID:   &uidStr,
-				Phone: &phone,
-			}
-			addUser, err := userService.AddUser(createUser)
-			if err != nil {
-				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
-				return
-			}
+		}
 
-			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
-			if err != nil {
-				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
-				return
-			}
-			err = global.Casbin.SavePolicy()
-			if err != nil {
-				result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
-				return
-			}
-			handelUserLogin(addUser, request.AutoLogin, c)
+		uid := idgen.NextId()
+		uidStr := strconv.FormatInt(uid, 10)
+		createUser := model.ScaAuthUser{
+			UID:   &uidStr,
+			Phone: &phone,
+		}
+
+		errChan := make(chan error)
+		go func() {
+			err := global.DB.Transaction(func(tx *gorm.DB) error {
+				addUser, err := userService.AddUser(createUser)
+				if err != nil {
+					return err
+				}
+				_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+				if err != nil {
+					return err
+				}
+				handelUserLogin(addUser, request.AutoLogin, c)
+				return nil
+			})
+			errChan <- err
+		}()
+
+		err := <-errChan
+		close(errChan)
+
+		if err != nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
 			return
 		}
 	} else {
-		code := redis.Get(constant.UserLoginSmsRedisKey + phone)
+		codeChan := make(chan *string)
+		go func() {
+			code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+			codeChan <- &code
+		}()
+
+		code := <-codeChan
+		close(codeChan)
+
 		if code == nil {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
-		} else {
-			if captcha != code.Val() {
-				result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
-				return
-			} else {
-				handelUserLogin(user, request.AutoLogin, c)
-				return
-			}
 		}
-
+		if &captcha != code {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
+			return
+		}
+		handelUserLogin(user, request.AutoLogin, c)
 	}
-
 }
 
 // RefreshHandler 刷新token
@@ -271,6 +300,10 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 	// 检查 user.UID 是否为 nil
 	if user.UID == nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		return
+	}
+	if !getUserLoginDevice(user, c) {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
 	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID})
@@ -392,4 +425,63 @@ func (UserAPI) ResetPassword(c *gin.Context) {
 
 	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordSuccess"), c)
+}
+
+// getUserLoginDevice 获取用户登录设备
+func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
+	userAgent := c.GetHeader("User-Agent")
+	if userAgent == "" {
+		global.LOG.Errorln("user-agent is empty")
+		return false
+	}
+	ua := useragent.New(userAgent)
+
+	ip := utils.GetClientIP(c)
+	location, err := global.IP2Location.SearchByStr(ip)
+	location = utils.RemoveZeroAndAdjust(location)
+	if err != nil {
+		global.LOG.Errorln(err)
+		return false
+	}
+	isBot := ua.Bot()
+	browser, browserVersion := ua.Browser()
+	os := ua.OS()
+	mobile := ua.Mobile()
+	mozilla := ua.Mozilla()
+	m := ua.Model()
+	platform := ua.Platform()
+	engine, engineVersion := ua.Engine()
+	device := model.ScaAuthUserDevice{
+		UserID:          user.UID,
+		IP:              &ip,
+		Location:        &location,
+		Agent:           userAgent,
+		Browser:         &browser,
+		BrowserVersion:  &browserVersion,
+		OperatingSystem: &os,
+		Mobile:          &mobile,
+		Bot:             &isBot,
+		Mozilla:         &mozilla,
+		Model:           &m,
+		Platform:        &platform,
+		EngineName:      &engine,
+		EngineVersion:   &engineVersion,
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgent(*user.UID, ip, userAgent)
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = userDeviceService.AddUserDevice(&device)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return false
+		}
+		return true
+	} else {
+		err := userDeviceService.UpdateUserDevice(userDevice.ID, &device)
+		if err != nil {
+			return false
+		}
+		return true
+	}
 }

@@ -91,7 +91,7 @@ func (c *WebSocket) OnPing(socket *gws.Conn, payload []byte) {
 	_ = socket.WritePong(payload)
 }
 
-func (c *WebSocket) OnPong(socket *gws.Conn, payload []byte) {}
+func (c *WebSocket) OnPong(_ *gws.Conn, _ []byte) {}
 
 func (c *WebSocket) OnMessage(socket *gws.Conn, message *gws.Message) {
 	defer message.Close()

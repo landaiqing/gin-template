@@ -9,10 +9,10 @@ const TableNameScaAuthUserDevice = "sca_auth_user_device"
 // ScaAuthUserDevice 用户设备信息
 type ScaAuthUserDevice struct {
 	ID              int64      `gorm:"column:id;type:bigint(20);primaryKey;comment:主键ID" json:"id"`                                  // 主键ID
-	UserID          *int64     `gorm:"column:user_id;type:bigint(20);comment:用户ID" json:"user_id"`                                   // 用户ID
+	UserID          *string    `gorm:"column:user_id;type:varchar(255);comment:用户ID" json:"user_id"`                                 // 用户ID
 	IP              *string    `gorm:"column:ip;type:varchar(255);comment:登录IP" json:"ip"`                                           // 登录IP
 	Location        *string    `gorm:"column:location;type:varchar(255);comment:地址" json:"location"`                                 // 地址
-	Agent           *string    `gorm:"column:agent;type:varchar(255);comment:设备信息" json:"agent"`                                     // 设备信息
+	Agent           string     `gorm:"column:agent;type:longtext;comment:设备信息" json:"agent"`                                         // 设备信息
 	ExtJSON         *string    `gorm:"column:ext_json;type:varchar(255);comment:额外字段" json:"ext_json"`                               // 额外字段
 	CreatedBy       *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
 	CreatedTime     *time.Time `gorm:"column:created_time;type:datetime;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_time"` // 创建时间
@@ -22,6 +22,13 @@ type ScaAuthUserDevice struct {
 	Browser         *string    `gorm:"column:browser;type:varchar(255);comment:浏览器" json:"browser"`                                  // 浏览器
 	OperatingSystem *string    `gorm:"column:operating_system;type:varchar(255);comment:操作系统" json:"operating_system"`               // 操作系统
 	BrowserVersion  *string    `gorm:"column:browser_version;type:varchar(255);comment:浏览器版本" json:"browser_version"`                // 浏览器版本
+	Mobile          *bool      `gorm:"column:mobile;type:int(11);comment:是否为手机" json:"mobile"`                                       // 是否为手机
+	Bot             *bool      `gorm:"column:bot;type:int(11);comment:是否为机器人" json:"bot"`                                            // 是否为机器人
+	Mozilla         *string    `gorm:"column:mozilla;type:varchar(10);comment:火狐版本" json:"mozilla"`                                  // 火狐版本
+	Model           *string    `gorm:"column:model;type:varchar(20);comment:设备型号" json:"model"`                                      // 设备型号
+	Platform        *string    `gorm:"column:platform;type:varchar(20);comment:平台" json:"platform"`                                  // 平台
+	EngineName      *string    `gorm:"column:engine_name;type:varchar(20);comment:引擎名称" json:"engine_name"`                          // 引擎名称
+	EngineVersion   *string    `gorm:"column:engine_version;type:varchar(20);comment:引擎版本" json:"engine_version"`                    // 引擎版本
 }
 
 // TableName ScaAuthUserDevice's table name

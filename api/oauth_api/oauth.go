@@ -2,22 +2,30 @@ package oauth_api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/mssola/useragent"
+	"gorm.io/gorm"
 	"net/http"
 	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/global"
+	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/service"
 	"schisandra-cloud-album/utils"
+	"sync"
 	"time"
 )
+
+var mu sync.Mutex
 
 type OAuthAPI struct{}
 
 var userService = service.Service.UserService
 var userSocialService = service.Service.UserSocialService
+var userDeviceService = service.Service.UserDeviceService
 
 type Token struct {
 	AccessToken string `json:"access_token"`
@@ -115,4 +123,68 @@ func HandelUserLogin(userId string) (bool, map[string]interface{}) {
 		"success": true,
 	}
 	return true, responseData
+}
+
+// GetUserLoginDevice 获取用户登录设备
+func (OAuthAPI) GetUserLoginDevice(c *gin.Context) {
+	userId := c.Query("user_id")
+	if userId == "" {
+		return
+	}
+	userAgent := c.GetHeader("User-Agent")
+	if userAgent == "" {
+		global.LOG.Errorln("user-agent is empty")
+		return
+	}
+	ua := useragent.New(userAgent)
+
+	ip := utils.GetClientIP(c)
+	location, err := global.IP2Location.SearchByStr(ip)
+	location = utils.RemoveZeroAndAdjust(location)
+	if err != nil {
+		global.LOG.Errorln(err)
+		return
+	}
+	isBot := ua.Bot()
+	browser, browserVersion := ua.Browser()
+	os := ua.OS()
+	mobile := ua.Mobile()
+	mozilla := ua.Mozilla()
+	m := ua.Model()
+	platform := ua.Platform()
+	engine, engineVersion := ua.Engine()
+	device := model.ScaAuthUserDevice{
+		UserID:          &userId,
+		IP:              &ip,
+		Location:        &location,
+		Agent:           userAgent,
+		Browser:         &browser,
+		BrowserVersion:  &browserVersion,
+		OperatingSystem: &os,
+		Mobile:          &mobile,
+		Bot:             &isBot,
+		Mozilla:         &mozilla,
+		Model:           &m,
+		Platform:        &platform,
+		EngineName:      &engine,
+		EngineVersion:   &engineVersion,
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgent(userId, ip, userAgent)
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = userDeviceService.AddUserDevice(&device)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return
+		}
+		return
+	} else {
+		err := userDeviceService.UpdateUserDevice(userDevice.ID, &device)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return
+		}
+		return
+	}
 }

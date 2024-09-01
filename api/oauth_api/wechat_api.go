@@ -26,11 +26,8 @@ import (
 	"schisandra-cloud-album/utils"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
-
-var mu sync.Mutex
 
 // GenerateClientId 生成客户端ID
 // @Summary 生成客户端ID
@@ -95,7 +92,7 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 					return "error"
 				}
 				fmt.Dump(msg)
-				return messages.NewText("再见，我的宝！")
+				return messages.NewText("ok")
 
 			case models.CALLBACK_EVENT_SCAN:
 				msg := models.EventScan{}
