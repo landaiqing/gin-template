@@ -234,7 +234,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 			github := enum.OAuthSourceGithub
 			userSocial = model.ScaAuthUserSocial{
 				UserID: &uidStr,
-				UUID:   &Id,
+				OpenID: &Id,
 				Source: &github,
 			}
 			err = userSocialService.AddUserSocial(userSocial)

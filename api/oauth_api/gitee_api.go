@@ -224,7 +224,7 @@ func (OAuthAPI) GiteeCallback(c *gin.Context) {
 			gitee := enum.OAuthSourceGitee
 			userSocial = model.ScaAuthUserSocial{
 				UserID: &uidStr,
-				UUID:   &Id,
+				OpenID: &Id,
 				Source: &gitee,
 			}
 			err = userSocialService.AddUserSocial(userSocial)
