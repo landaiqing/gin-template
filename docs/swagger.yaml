@@ -8,20 +8,18 @@ definitions:
       password:
         type: string
     type: object
+  dto.AddPermissionRequestDto:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/model.ScaAuthPermission'
+        type: array
+    type: object
   dto.AddRoleToUserRequestDto:
     properties:
       role_key:
         type: string
       uid:
-        type: string
-    type: object
-  dto.AddUserRequest:
-    properties:
-      password:
-        type: string
-      phone:
-        type: string
-      username:
         type: string
     type: object
   dto.PhoneLoginRequest:
@@ -51,9 +49,78 @@ definitions:
       role_name:
         type: string
     type: object
+  model.ScaAuthPermission:
+    properties:
+      created_by:
+        description: 创建人
+        type: string
+      created_time:
+        description: 创建时间
+        type: string
+      deleted:
+        description: 是否删除
+        type: integer
+      icon:
+        description: 图标
+        type: string
+      id:
+        description: 主键ID
+        type: integer
+      method:
+        description: 请求方式
+        type: string
+      order:
+        description: 排序
+        type: integer
+      parent_id:
+        description: 父ID
+        type: integer
+      path:
+        description: 路径
+        type: string
+      permission_key:
+        description: 权限关键字
+        type: string
+      permission_name:
+        description: 权限名称
+        type: string
+      remark:
+        description: 备注 描述
+        type: string
+      status:
+        description: 状态 0 启用 1 停用
+        type: integer
+      type:
+        description: 类型 0 菜单 1 目录 2 按钮 -1其他
+        type: integer
+      update_by:
+        description: 更新人
+        type: string
+      update_time:
+        description: 更新时间
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /api/auth/permission/add:
+    post:
+      consumes:
+      - application/json
+      description: 批量添加权限
+      parameters:
+      - description: 权限列表
+        in: body
+        name: permissions
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddPermissionRequestDto'
+      produces:
+      - application/json
+      responses: {}
+      summary: 批量添加权限
+      tags:
+      - 权限管理
   /api/auth/role/add_role_to_user:
     post:
       consumes:
@@ -468,23 +535,6 @@ paths:
           schema:
             type: string
       summary: 刷新token
-      tags:
-      - 用户模块
-  /api/user/add:
-    post:
-      parameters:
-      - description: 用户信息
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/dto.AddUserRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: 添加用户
       tags:
       - 用户模块
   /api/user/login:

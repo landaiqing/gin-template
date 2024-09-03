@@ -429,6 +429,12 @@ func (UserAPI) ResetPassword(c *gin.Context) {
 
 // getUserLoginDevice 获取用户登录设备
 func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
+
+	// 检查user.UID是否为空
+	if user.UID == nil {
+		global.LOG.Errorln("user.UID is nil")
+		return false
+	}
 	userAgent := c.GetHeader("User-Agent")
 	if userAgent == "" {
 		global.LOG.Errorln("user-agent is empty")
@@ -438,11 +444,12 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 
 	ip := utils.GetClientIP(c)
 	location, err := global.IP2Location.SearchByStr(ip)
-	location = utils.RemoveZeroAndAdjust(location)
 	if err != nil {
 		global.LOG.Errorln(err)
 		return false
 	}
+	location = utils.RemoveZeroAndAdjust(location)
+
 	isBot := ua.Bot()
 	browser, browserVersion := ua.Browser()
 	os := ua.OS()
@@ -451,6 +458,7 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 	m := ua.Model()
 	platform := ua.Platform()
 	engine, engineVersion := ua.Engine()
+
 	device := model.ScaAuthUserDevice{
 		UserID:          user.UID,
 		IP:              &ip,
@@ -467,8 +475,10 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 		EngineName:      &engine,
 		EngineVersion:   &engineVersion,
 	}
+
 	mu.Lock()
 	defer mu.Unlock()
+
 	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgent(*user.UID, ip, userAgent)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		err = userDeviceService.AddUserDevice(&device)
@@ -476,12 +486,16 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 			global.LOG.Errorln(err)
 			return false
 		}
-		return true
+	} else if err != nil {
+		global.LOG.Errorln(err)
+		return false
 	} else {
 		err := userDeviceService.UpdateUserDevice(userDevice.ID, &device)
 		if err != nil {
+			global.LOG.Errorln(err)
 			return false
 		}
-		return true
 	}
+
+	return true
 }

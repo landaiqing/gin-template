@@ -54,4 +54,6 @@ QRCodeGetSuccess = "获取二维码成功!"
 QRCodeExpired = "二维码已过期!"
 InternalError = "内部错误!"
 RequestError = "请求错误!"
+AssignFailed = "分配失败!"
+AssignSuccess = "分配成功!"
 

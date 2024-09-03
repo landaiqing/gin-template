@@ -11,9 +11,9 @@ import (
 func SwaggerRouter(router *gin.Engine) {
 	docs.SwaggerInfo.BasePath = ""
 	docs.SwaggerInfo.Description = global.CONFIG.Swagger.Description
-	router.GET("/api/doc/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, func(config *ginSwagger.Config) {
-		config.Title = global.CONFIG.Swagger.Title
-	}), gin.BasicAuth(gin.Accounts{
+	router.GET("/api/doc/*any", gin.BasicAuth(gin.Accounts{
 		global.CONFIG.Swagger.User: global.CONFIG.Swagger.Password,
+	}), ginSwagger.WrapHandler(swaggerFiles.Handler, func(config *ginSwagger.Config) {
+		config.Title = global.CONFIG.Swagger.Title
 	}))
 }

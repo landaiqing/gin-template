@@ -30,12 +30,13 @@ func InitRouter() *gin.Engine {
 	// 国际化设置
 	publicGroup.Use(middleware.I18n())
 
-	modules.SwaggerRouter(router)        // 注册swagger路由
-	modules.UserRouter(publicGroup)      // 注册鉴权路由
-	modules.CaptchaRouter(publicGroup)   // 注册验证码路由
-	modules.SmsRouter(publicGroup)       // 注册短信验证码路由
-	modules.OauthRouter(publicGroup)     // 注册oauth路由
-	modules.WebsocketRouter(publicGroup) // 注册websocket路由
-	modules.RoleRouter(publicGroup)      // 注册角色路由
+	modules.SwaggerRouter(router)         // 注册swagger路由
+	modules.UserRouter(publicGroup)       // 注册鉴权路由
+	modules.CaptchaRouter(publicGroup)    // 注册验证码路由
+	modules.SmsRouter(publicGroup)        // 注册短信验证码路由
+	modules.OauthRouter(publicGroup)      // 注册oauth路由
+	modules.WebsocketRouter(publicGroup)  // 注册websocket路由
+	modules.RoleRouter(publicGroup)       // 注册角色路由
+	modules.PermissionRouter(publicGroup) // 注册权限路由
 	return router
 }

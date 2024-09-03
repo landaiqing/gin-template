@@ -15,6 +15,33 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/permission/add": {
+            "post": {
+                "description": "批量添加权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "权限管理"
+                ],
+                "summary": "批量添加权限",
+                "parameters": [
+                    {
+                        "description": "权限列表",
+                        "name": "permissions",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddPermissionRequestDto"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/api/auth/role/add_role_to_user": {
             "post": {
                 "description": "给指定用户添加角色",
@@ -645,33 +672,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user/add": {
-            "post": {
-                "tags": [
-                    "用户模块"
-                ],
-                "summary": "添加用户",
-                "parameters": [
-                    {
-                        "description": "用户信息",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.AddUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/api/user/login": {
             "post": {
                 "tags": [
@@ -789,6 +789,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AddPermissionRequestDto": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ScaAuthPermission"
+                    }
+                }
+            }
+        },
         "dto.AddRoleToUserRequestDto": {
             "type": "object",
             "properties": {
@@ -796,20 +807,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uid": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AddUserRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }
@@ -852,6 +849,75 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ScaAuthPermission": {
+            "type": "object",
+            "properties": {
+                "created_by": {
+                    "description": "创建人",
+                    "type": "string"
+                },
+                "created_time": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "deleted": {
+                    "description": "是否删除",
+                    "type": "integer"
+                },
+                "icon": {
+                    "description": "图标",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "method": {
+                    "description": "请求方式",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "parent_id": {
+                    "description": "父ID",
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "路径",
+                    "type": "string"
+                },
+                "permission_key": {
+                    "description": "权限关键字",
+                    "type": "string"
+                },
+                "permission_name": {
+                    "description": "权限名称",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注 描述",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态 0 启用 1 停用",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "类型 0 菜单 1 目录 2 按钮 -1其他",
+                    "type": "integer"
+                },
+                "update_by": {
+                    "description": "更新人",
+                    "type": "string"
+                },
+                "update_time": {
+                    "description": "更新时间",
                     "type": "string"
                 }
             }
