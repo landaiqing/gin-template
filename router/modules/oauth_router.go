@@ -12,7 +12,6 @@ func OauthRouter(router *gin.RouterGroup) {
 	{
 		wechatRouter := group.Group("/wechat")
 		{
-			wechatRouter.GET("/generate_client_id", oauth.GenerateClientId)
 			wechatRouter.GET("/get_temp_qrcode", oauth.GetTempQrCode)
 			//wechatRouter.GET("/callback", oauth.CallbackVerify)
 			wechatRouter.POST("/callback", oauth.CallbackNotify)
@@ -34,5 +33,4 @@ func OauthRouter(router *gin.RouterGroup) {
 		}
 		group.GET("/get_device", oauth.GetUserLoginDevice)
 	}
-
 }

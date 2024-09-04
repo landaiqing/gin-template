@@ -22,7 +22,6 @@ type ScaAuthUserDevice struct {
 	Mobile          *bool      `gorm:"column:mobile;type:int(11);comment:是否为手机" json:"mobile"`                                       // 是否为手机
 	Bot             *bool      `gorm:"column:bot;type:int(11);comment:是否为机器人" json:"bot"`                                            // 是否为机器人
 	Mozilla         *string    `gorm:"column:mozilla;type:varchar(10);comment:火狐版本" json:"mozilla"`                                  // 火狐版本
-	Model           *string    `gorm:"column:model;type:varchar(20);comment:设备型号" json:"model"`                                      // 设备型号
 	Platform        *string    `gorm:"column:platform;type:varchar(20);comment:平台" json:"platform"`                                  // 平台
 	EngineName      *string    `gorm:"column:engine_name;type:varchar(20);comment:引擎名称" json:"engine_name"`                          // 引擎名称
 	EngineVersion   *string    `gorm:"column:engine_version;type:varchar(20);comment:引擎版本" json:"engine_version"`                    // 引擎版本

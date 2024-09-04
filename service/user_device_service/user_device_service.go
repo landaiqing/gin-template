@@ -34,7 +34,6 @@ func (UserDeviceService) UpdateUserDevice(id int64, userDevice *model.ScaAuthUse
 		Mobile:          userDevice.Mobile,
 		Bot:             userDevice.Bot,
 		Mozilla:         userDevice.Mozilla,
-		Model:           userDevice.Model,
 		Platform:        userDevice.Platform,
 		EngineName:      userDevice.EngineName,
 		EngineVersion:   userDevice.EngineVersion,

@@ -150,7 +150,6 @@ func (OAuthAPI) GetUserLoginDevice(c *gin.Context) {
 	os := ua.OS()
 	mobile := ua.Mobile()
 	mozilla := ua.Mozilla()
-	m := ua.Model()
 	platform := ua.Platform()
 	engine, engineVersion := ua.Engine()
 	device := model.ScaAuthUserDevice{
@@ -164,7 +163,6 @@ func (OAuthAPI) GetUserLoginDevice(c *gin.Context) {
 		Mobile:          &mobile,
 		Bot:             &isBot,
 		Mozilla:         &mozilla,
-		Model:           &m,
 		Platform:        &platform,
 		EngineName:      &engine,
 		EngineVersion:   &engineVersion,

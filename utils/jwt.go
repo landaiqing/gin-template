@@ -33,7 +33,7 @@ func GenerateAccessToken(payload AccessJWTPayload) (string, error) {
 	claims := AccessJWTClaims{
 		AccessJWTPayload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},

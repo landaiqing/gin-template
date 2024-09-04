@@ -8,10 +8,10 @@ import (
 	"schisandra-cloud-album/global"
 )
 
-func SwaggerRouter(router *gin.Engine) {
+func SwaggerRouter(router *gin.RouterGroup) {
 	docs.SwaggerInfo.BasePath = ""
 	docs.SwaggerInfo.Description = global.CONFIG.Swagger.Description
-	router.GET("/api/doc/*any", gin.BasicAuth(gin.Accounts{
+	router.GET("/doc/*any", gin.BasicAuth(gin.Accounts{
 		global.CONFIG.Swagger.User: global.CONFIG.Swagger.Password,
 	}), ginSwagger.WrapHandler(swaggerFiles.Handler, func(config *ginSwagger.Config) {
 		config.Title = global.CONFIG.Swagger.Title

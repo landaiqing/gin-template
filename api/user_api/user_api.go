@@ -154,13 +154,14 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 // @Router /api/user/phone_login [post]
 func (UserAPI) PhoneLogin(c *gin.Context) {
 	request := dto.PhoneLoginRequest{}
-	err := c.ShouldBindJSON(&request)
+	err := c.ShouldBind(&request)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
 	phone := request.Phone
 	captcha := request.Captcha
+	autoLogin := request.AutoLogin
 	if phone == "" || captcha == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneAndCaptchaNotEmpty"), c)
 		return
@@ -213,7 +214,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				if err != nil {
 					return err
 				}
-				handelUserLogin(addUser, request.AutoLogin, c)
+				handelUserLogin(addUser, autoLogin, c)
 				return nil
 			})
 			errChan <- err
@@ -227,24 +228,24 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 			return
 		}
 	} else {
-		codeChan := make(chan *string)
+		codeChan := make(chan string)
 		go func() {
 			code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
-			codeChan <- &code
+			codeChan <- code
 		}()
 
 		code := <-codeChan
 		close(codeChan)
 
-		if code == nil {
+		if code == "" {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
 			return
 		}
-		if &captcha != code {
+		if captcha != code {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
 			return
 		}
-		handelUserLogin(user, request.AutoLogin, c)
+		handelUserLogin(user, autoLogin, c)
 	}
 }
 
@@ -316,7 +317,7 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 	if autoLogin {
 		days = 7 * 24 * time.Hour
 	} else {
-		days = 24 * time.Hour
+		days = time.Minute * 30
 	}
 
 	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID}, days)
@@ -455,7 +456,6 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 	os := ua.OS()
 	mobile := ua.Mobile()
 	mozilla := ua.Mozilla()
-	m := ua.Model()
 	platform := ua.Platform()
 	engine, engineVersion := ua.Engine()
 
@@ -470,7 +470,6 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 		Mobile:          &mobile,
 		Bot:             &isBot,
 		Mozilla:         &mozilla,
-		Model:           &m,
 		Platform:        &platform,
 		EngineName:      &engine,
 		EngineVersion:   &engineVersion,

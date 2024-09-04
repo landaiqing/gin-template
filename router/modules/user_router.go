@@ -3,7 +3,6 @@ package modules
 import (
 	"github.com/gin-gonic/gin"
 	"schisandra-cloud-album/api"
-	"schisandra-cloud-album/middleware"
 )
 
 var userApi = api.Api.UserApi
@@ -16,15 +15,18 @@ func UserRouter(router *gin.RouterGroup) {
 		userGroup.POST("/phone_login", userApi.PhoneLogin)
 		userGroup.POST("/reset_password", userApi.ResetPassword)
 	}
-	authGroup := router.Group("auth").Use(middleware.JWTAuthMiddleware()).Use(middleware.CasbinMiddleware())
-	{
-		authGroup.GET("/user/list", userApi.GetUserList)
-		authGroup.GET("/user/query_by_uuid", userApi.QueryUserByUuid)
-
-	}
 	tokenGroup := router.Group("token")
 	{
 		tokenGroup.POST("/refresh", userApi.RefreshHandler)
+	}
+}
+
+// UserRouterAuth 用户相关路由 有auth接口组需要token验证
+func UserRouterAuth(router *gin.RouterGroup) {
+	authGroup := router.Group("auth")
+	{
+		authGroup.GET("/user/list", userApi.GetUserList)
+		authGroup.GET("/user/query_by_uuid", userApi.QueryUserByUuid)
 	}
 
 }

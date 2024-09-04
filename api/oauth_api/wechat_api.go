@@ -12,7 +12,6 @@ import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount/server/handlers/models"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
 	"schisandra-cloud-album/api/user_api/dto"
@@ -28,36 +27,6 @@ import (
 	"strings"
 	"time"
 )
-
-// GenerateClientId 生成客户端ID
-// @Summary 生成客户端ID
-// @Description 生成客户端ID
-// @Tags 微信公众号
-// @Produce json
-// @Router /api/oauth/generate_client_id [get]
-func (OAuthAPI) GenerateClientId(c *gin.Context) {
-	// 获取客户端IP
-	ip := utils.GetClientIP(c)
-	// 加锁
-	mu.Lock()
-	defer mu.Unlock()
-
-	// 从Redis获取客户端ID
-	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
-	if clientId != "" {
-		result.OkWithData(clientId, c)
-		return
-	}
-
-	// 生成新的客户端ID
-	v1 := uuid.NewV1()
-	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), 0).Err()
-	if err != nil {
-		global.LOG.Error(err)
-		return
-	}
-	result.OkWithData(v1.String(), c)
-}
 
 // CallbackNotify 微信回调
 // @Summary 微信回调

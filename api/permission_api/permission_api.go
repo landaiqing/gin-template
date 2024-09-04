@@ -68,3 +68,18 @@ func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "AssignSuccess"), c)
 	return
 }
+
+// GetUserPermissions 获取服用权限
+func (PermissionAPI) GetUserPermissions(c *gin.Context) {
+	userId := c.Query("user_id")
+	if userId == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "GetUserFailed"), c)
+		return
+	}
+	data, err := global.Casbin.GetImplicitRolesForUser(userId)
+	if err != nil {
+		return
+	}
+	result.OkWithData(data, c)
+	return
+}
