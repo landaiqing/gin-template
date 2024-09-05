@@ -30,7 +30,7 @@ func InitRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 	// 国际化设置
-	router.Use(middleware.I18n())
+	router.Use(middleware.I18n(), middleware.ExceptionNotification())
 
 	publicGroup := router.Group("api") // 不需要鉴权的路由组
 	{
