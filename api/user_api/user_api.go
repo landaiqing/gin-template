@@ -498,3 +498,35 @@ func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 
 	return true
 }
+
+// Logout 退出登录
+// @Summary 退出登录
+// @Tags 用户模块
+// @Success 200 {string} json
+// @Router /api/auth/user/logout [post]
+func (UserAPI) Logout(c *gin.Context) {
+	userId := c.Query("user_id")
+	if userId == "" {
+		global.LOG.Errorln("userId is empty")
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		return
+	}
+
+	tokenKey := constant.UserLoginTokenRedisKey + userId
+	del := redis.Del(tokenKey)
+
+	if del.Err() != nil {
+		global.LOG.Errorln(del.Err())
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LogoutFailed"), c)
+		return
+	}
+	ip := utils.GetClientIP(c)
+	key := constant.UserLoginClientRedisKey + ip
+	del = redis.Del(key)
+	if del.Err() != nil {
+		global.LOG.Errorln(del.Err())
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LogoutFailed"), c)
+		return
+	}
+	result.OkWithMessage(ginI18n.MustGetMessage(c, "LogoutSuccess"), c)
+}

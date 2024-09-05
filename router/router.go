@@ -25,7 +25,7 @@ func InitRouter() *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{global.CONFIG.System.Web},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "X-CSRF-Token", "Accept-Language", "X-Request-Id"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -33,28 +33,25 @@ func InitRouter() *gin.Engine {
 	router.Use(middleware.I18n())
 
 	publicGroup := router.Group("api") // 不需要鉴权的路由组
-	authGroup := router.Group("api")   // 需要鉴权的路由组
+	{
+		modules.ClientRouter(publicGroup)    // 注册客户端路由
+		modules.SwaggerRouter(publicGroup)   // 注册swagger路由
+		modules.WebsocketRouter(publicGroup) // 注册websocket路由
+		modules.OauthRouter(publicGroup)
+		modules.CaptchaRouter(publicGroup) // 注册验证码路由
+		modules.SmsRouter(publicGroup)     // 注册短信验证码路由
+		modules.UserRouter(publicGroup)    // 注册鉴权路由
+	}
+	authGroup := router.Group("api") // 需要鉴权的路由组
 	authGroup.Use(
 		middleware.JWTAuthMiddleware(),
 		middleware.CasbinMiddleware(),
-		middleware.CheckClientMiddleware())
-
-	checkClientGroup := router.Group("api") // 需要检查客户端的路由组
-
-	checkClientGroup.Use(middleware.CheckClientMiddleware())
-
-	modules.ClientRouter(publicGroup)    // 注册客户端路由
-	modules.SwaggerRouter(publicGroup)   // 注册swagger路由
-	modules.WebsocketRouter(publicGroup) // 注册websocket路由
-
-	modules.CaptchaRouter(checkClientGroup) // 注册验证码路由
-	modules.SmsRouter(checkClientGroup)     // 注册短信验证码路由
-	modules.OauthRouter(checkClientGroup)   // 注册oauth路由
-	modules.UserRouter(checkClientGroup)    // 注册鉴权路由
-
-	modules.UserRouterAuth(authGroup)   // 注册鉴权路由
-	modules.RoleRouter(authGroup)       // 注册角色路由
-	modules.PermissionRouter(authGroup) // 注册权限路由
+	)
+	{
+		modules.UserRouterAuth(authGroup)   // 注册鉴权路由
+		modules.RoleRouter(authGroup)       // 注册角色路由
+		modules.PermissionRouter(authGroup) // 注册权限路由
+	}
 
 	return router
 }

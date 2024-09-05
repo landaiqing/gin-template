@@ -58,4 +58,5 @@ AssignFailed = "分配失败!"
 AssignSuccess = "分配成功!"
 DuplicateLogin = "重复登录!"
 PermissionDenied = "权限不足!"
-
+LogoutFailed = "登出失败!"
+LogoutSuccess = "登出成功!"

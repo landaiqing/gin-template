@@ -24,8 +24,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 默认双Token放在请求头Authorization的Bearer中，并以空格隔开
 		authHeader := c.GetHeader(global.CONFIG.JWT.HeaderKey)
 		if authHeader == "" {
-
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "AuthVerifyFailed"), c)
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
 			c.Abort()
 			return
 		}
@@ -33,11 +32,11 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		accessToken := strings.TrimPrefix(authHeader, headerPrefix+" ")
 
 		if accessToken == "" {
-
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "AuthVerifyFailed"), c)
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
 			c.Abort()
 			return
 		}
+
 		parseToken, isUpd, err := utils.ParseAccessToken(accessToken)
 		if err != nil || !isUpd {
 			result.FailWithCodeAndMessage(401, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
@@ -45,15 +44,20 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		token := redis.Get(constant.UserLoginTokenRedisKey + *parseToken.UserID).Val()
+		if token == "" {
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
+			c.Abort()
+			return
+		}
 		tokenResult := TokenData{}
 		err = json.Unmarshal([]byte(token), &tokenResult)
 		if err != nil {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
 			c.Abort()
 			return
 		}
 		if tokenResult.AccessToken != accessToken {
-			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "DuplicateLogin"), c)
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
 			c.Abort()
 			return
 		}

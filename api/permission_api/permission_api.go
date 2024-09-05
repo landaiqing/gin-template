@@ -69,7 +69,7 @@ func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
 	return
 }
 
-// GetUserPermissions 获取服用权限
+// GetUserPermissions 获取用户角色权限
 func (PermissionAPI) GetUserPermissions(c *gin.Context) {
 	userId := c.Query("user_id")
 	if userId == "" {
@@ -78,6 +78,7 @@ func (PermissionAPI) GetUserPermissions(c *gin.Context) {
 	}
 	data, err := global.Casbin.GetImplicitRolesForUser(userId)
 	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "GetUserFailed"), c)
 		return
 	}
 	result.OkWithData(data, c)

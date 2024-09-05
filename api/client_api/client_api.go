@@ -8,6 +8,7 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
+	"time"
 )
 
 // GenerateClientId 生成客户端ID
@@ -29,10 +30,9 @@ func (ClientAPI) GenerateClientId(c *gin.Context) {
 		result.OkWithData(clientId, c)
 		return
 	}
-
 	// 生成新的客户端ID
 	v1 := uuid.NewV1()
-	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), 0).Err()
+	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), time.Hour*24*30).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		return

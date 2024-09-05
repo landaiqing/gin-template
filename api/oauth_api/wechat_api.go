@@ -125,9 +125,8 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-
 	ip := utils.GetClientIP(c) // 使用工具函数获取客户端IP
-	key := constant.UserLoginQrcodeRedisKey + ip + ":" + clientId
+	key := constant.UserLoginQrcodeRedisKey + ip
 
 	// 从Redis获取二维码数据
 	qrcode := redis.Get(key).Val()
