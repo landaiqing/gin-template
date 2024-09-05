@@ -32,7 +32,7 @@ func (ClientAPI) GenerateClientId(c *gin.Context) {
 	}
 	// 生成新的客户端ID
 	v1 := uuid.NewV1()
-	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), time.Hour*24*30).Err()
+	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), time.Hour*24*7).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		return

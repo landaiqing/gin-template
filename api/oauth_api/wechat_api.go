@@ -142,7 +142,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 	}
 
 	// 生成临时二维码
-	data, err := global.Wechat.QRCode.Temporary(c.Request.Context(), clientId, 30*24*3600)
+	data, err := global.Wechat.QRCode.Temporary(c.Request.Context(), clientId, 7*24*3600)
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
@@ -156,7 +156,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
 	}
-	if err := redis.Set(key, serializedData, time.Hour*24*30).Err(); err != nil {
+	if err := redis.Set(key, serializedData, time.Hour*24*7).Err(); err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "QRCodeGetFailed"), c)
 		return
