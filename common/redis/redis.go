@@ -16,6 +16,11 @@ func Set(key string, value interface{}, expiration time.Duration) *redis.StatusC
 	return global.REDIS.Set(ctx, key, value, expiration)
 }
 
+// Exists 判断名称为key的key是否存在
+func Exists(key string) *redis.IntCmd {
+	return global.REDIS.Exists(ctx, key)
+}
+
 // Get 查询数据库中名称为key的value值
 func Get(key string) *redis.StringCmd {
 	return global.REDIS.Get(ctx, key)

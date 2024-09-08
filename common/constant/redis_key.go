@@ -9,4 +9,5 @@ const (
 	UserLoginClientRedisKey    = "user:login:client:"
 	UserLoginQrcodeRedisKey    = "user:login:qrcode:"
 	UserLoginWechatRedisKey    = "user:wechat:token:"
+	SystemApiNonceRedisKey     = "system:api:nonce:"
 )

@@ -5,5 +5,4 @@ type Wechat struct {
 	AppSecret string `yaml:"app-secret"`
 	Token     string `yaml:"token"`
 	AESKey    string `yaml:"aes-key"`
-	OpenID    string `yaml:"openid"`
 }

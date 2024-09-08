@@ -3,7 +3,6 @@ package oauth_api
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ArtisanCloud/PowerLibs/v3/fmt"
 	"github.com/ArtisanCloud/PowerLibs/v3/http/helper"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/basicService/qrCode/response"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
@@ -60,7 +59,6 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 					println(err.Error())
 					return "error"
 				}
-				fmt.Dump(msg)
 				return messages.NewText("ok")
 
 			case models.CALLBACK_EVENT_SCAN:

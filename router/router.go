@@ -2,8 +2,10 @@ package router
 
 import (
 	"github.com/gin-contrib/cors"
+	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/middleware"
 	"schisandra-cloud-album/router/modules"
@@ -15,6 +17,8 @@ var oauth = api.Api.OAuthApi
 func InitRouter() *gin.Engine {
 	gin.SetMode(global.CONFIG.System.Env)
 	router := gin.Default()
+	router.NoRoute(HandleNotFound)
+	router.NoMethod(HandleNotFound)
 	err := router.SetTrustedProxies([]string{global.CONFIG.System.Ip})
 	if err != nil {
 		global.LOG.Error(err)
@@ -25,12 +29,13 @@ func InitRouter() *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{global.CONFIG.System.Web},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language", "X-Sign", "X-Timestamp", "X-Nonce"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 	// 国际化设置
-	router.Use(middleware.I18n(), middleware.ExceptionNotification())
+	router.Use(middleware.I18n(), middleware.ValidateSignMiddleware())
+	router.Use(middleware.SecurityHeaders())
 
 	publicGroup := router.Group("api") // 不需要鉴权的路由组
 	{
@@ -54,4 +59,10 @@ func InitRouter() *gin.Engine {
 	}
 
 	return router
+}
+
+// HandleNotFound 404处理
+func HandleNotFound(c *gin.Context) {
+	result.FailWithCodeAndMessage(404, ginI18n.MustGetMessage(c, "404NotFound"), c)
+	return
 }

@@ -71,7 +71,7 @@ func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
 
 // GetUserPermissions 获取用户角色权限
 func (PermissionAPI) GetUserPermissions(c *gin.Context) {
-	userId := c.Query("user_id")
+	userId := c.PostForm("user_id")
 	if userId == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "GetUserFailed"), c)
 		return
