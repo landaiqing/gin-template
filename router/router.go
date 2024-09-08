@@ -4,15 +4,12 @@ import (
 	"github.com/gin-contrib/cors"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/middleware"
 	"schisandra-cloud-album/router/modules"
 	"time"
 )
-
-var oauth = api.Api.OAuthApi
 
 func InitRouter() *gin.Engine {
 	gin.SetMode(global.CONFIG.System.Env)
@@ -34,23 +31,29 @@ func InitRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 	// 国际化设置
-	router.Use(middleware.I18n(), middleware.ValidateSignMiddleware())
-	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.I18n())
 
-	publicGroup := router.Group("api") // 不需要鉴权的路由组
+	websocketRouter := router.Group("api")
 	{
-		modules.ClientRouter(publicGroup)    // 注册客户端路由
-		modules.SwaggerRouter(publicGroup)   // 注册swagger路由
-		modules.WebsocketRouter(publicGroup) // 注册websocket路由
+		modules.WebsocketRouter(websocketRouter) // 注册websocket路由
+	}
+	publicGroup := router.Group("api") // 不需要鉴权的路由组
+	publicGroup.Use(middleware.SecurityHeaders())
+	{
+		modules.ClientRouter(publicGroup)  // 注册客户端路由
+		modules.SwaggerRouter(publicGroup) // 注册swagger路由
+
 		modules.OauthRouter(publicGroup)
 		modules.CaptchaRouter(publicGroup) // 注册验证码路由
 		modules.SmsRouter(publicGroup)     // 注册短信验证码路由
 		modules.UserRouter(publicGroup)    // 注册鉴权路由
 	}
 	authGroup := router.Group("api") // 需要鉴权的路由组
+
 	authGroup.Use(
 		middleware.JWTAuthMiddleware(),
 		middleware.CasbinMiddleware(),
+		middleware.SecurityHeaders(),
 	)
 	{
 		modules.UserRouterAuth(authGroup)   // 注册鉴权路由
