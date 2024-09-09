@@ -224,6 +224,7 @@ func (OAuthAPI) Callback(c *gin.Context) {
 				Avatar:   &gitHubUser.AvatarURL,
 				Blog:     &gitHubUser.Blog,
 				Email:    &gitHubUser.Email,
+				Gender:   &enum.Male,
 			}
 			addUser, err := userService.AddUser(user)
 			if err != nil {

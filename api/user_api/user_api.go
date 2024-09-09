@@ -2,6 +2,7 @@ package user_api
 
 import (
 	"errors"
+	"github.com/DanPlayer/randomname"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
@@ -198,9 +199,19 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
+
+		avatar, err := utils.GenerateAvatar(uidStr)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return
+		}
+		name := randomname.GenerateName()
 		createUser := model.ScaAuthUser{
-			UID:   &uidStr,
-			Phone: &phone,
+			UID:      &uidStr,
+			Phone:    &phone,
+			Avatar:   &avatar,
+			Nickname: &name,
+			Gender:   &enum.Male,
 		}
 
 		errChan := make(chan error)
@@ -214,13 +225,13 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 				if err != nil {
 					return err
 				}
-				handelUserLogin(addUser, autoLogin, c)
+				handelUserLogin(*addUser, autoLogin, c)
 				return nil
 			})
 			errChan <- err
 		}()
 
-		err := <-errChan
+		err = <-errChan
 		close(errChan)
 
 		if err != nil {

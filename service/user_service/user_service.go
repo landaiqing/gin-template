@@ -42,16 +42,16 @@ func (UserService) QueryUserById(id *int64) (model.ScaAuthUser, error) {
 }
 
 // AddUser 添加用户
-func (UserService) AddUser(user model.ScaAuthUser) (model.ScaAuthUser, error) {
+func (UserService) AddUser(user model.ScaAuthUser) (*model.ScaAuthUser, error) {
 	if err := global.DB.Create(&user).Error; err != nil {
-		return model.ScaAuthUser{}, err
+		return &model.ScaAuthUser{}, err
 	}
 	// 查询创建后的用户信息
 	var createdUser model.ScaAuthUser
 	if err := global.DB.First(&createdUser, user.ID).Error; err != nil {
-		return model.ScaAuthUser{}, err
+		return &model.ScaAuthUser{}, err
 	}
-	return createdUser, nil
+	return &createdUser, nil
 }
 
 // UpdateUser 更新用户

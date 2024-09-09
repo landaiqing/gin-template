@@ -260,14 +260,12 @@ func (OAuthAPI) QQCallback(c *gin.Context) {
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
-		location := qqUserInfo.Province + "|" + qqUserInfo.City
 		user := model.ScaAuthUser{
 			UID:      &uidStr,
 			Username: &authQQme.OpenID,
 			Nickname: &qqUserInfo.Nickname,
 			Avatar:   &qqUserInfo.FigureurlQq1,
 			Gender:   &qqUserInfo.Gender,
-			Location: &location,
 		}
 		addUser, err := userService.AddUser(user)
 		if err != nil {

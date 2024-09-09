@@ -17,7 +17,7 @@ type ScaAuthUser struct {
 	Phone       *string    `gorm:"column:phone;type:varchar(32);comment:电话" json:"phone"`                                        // 电话
 	Password    *string    `gorm:"column:password;type:varchar(64);comment:密码" json:"-"`                                         // 密码
 	Gender      *string    `gorm:"column:gender;type:varchar(32);comment:性别" json:"gender"`                                      // 性别
-	Avatar      *string    `gorm:"column:avatar;type:varchar(255);comment:头像" json:"avatar"`                                     // 头像
+	Avatar      *string    `gorm:"column:avatar;type:longtext;comment:头像" json:"avatar"`                                         // 头像
 	Status      *int64     `gorm:"column:status;type:tinyint(4);default:0;comment:状态 0 正常 1 封禁" json:"status"`                   // 状态 0 正常 1 封禁
 	Introduce   *string    `gorm:"column:introduce;type:varchar(255);comment:介绍" json:"introduce"`                               // 介绍
 	CreatedTime *time.Time `gorm:"column:created_time;type:datetime;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_time"` // 创建时间

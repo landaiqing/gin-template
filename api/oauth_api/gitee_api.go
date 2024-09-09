@@ -214,6 +214,7 @@ func (OAuthAPI) GiteeCallback(c *gin.Context) {
 				Avatar:   &giteeUser.AvatarURL,
 				Blog:     &giteeUser.Blog,
 				Email:    &giteeUser.Email,
+				Gender:   &enum.Male,
 			}
 			addUser, err := userService.AddUser(user)
 			if err != nil {

@@ -33,17 +33,17 @@ func InitRouter() *gin.Engine {
 	// 国际化设置
 	router.Use(middleware.I18n())
 
-	websocketRouter := router.Group("api")
+	noMiddlewareRouter := router.Group("api")
 	{
-		modules.WebsocketRouter(websocketRouter) // 注册websocket路由
+		modules.WebsocketRouter(noMiddlewareRouter) // 注册websocket路由
+		modules.OauthRouter(noMiddlewareRouter)     // 注册oauth路由
 	}
 	publicGroup := router.Group("api") // 不需要鉴权的路由组
 	publicGroup.Use(middleware.SecurityHeaders())
 	{
 		modules.ClientRouter(publicGroup)  // 注册客户端路由
 		modules.SwaggerRouter(publicGroup) // 注册swagger路由
-
-		modules.OauthRouter(publicGroup)
+		modules.OauthRouterAuth(publicGroup)
 		modules.CaptchaRouter(publicGroup) // 注册验证码路由
 		modules.SmsRouter(publicGroup)     // 注册短信验证码路由
 		modules.UserRouter(publicGroup)    // 注册鉴权路由

@@ -9,6 +9,7 @@ import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	models2 "github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/models"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount/server/handlers/models"
+	"github.com/DanPlayer/randomname"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/yitter/idgenerator-go/idgen"
@@ -179,9 +180,17 @@ func wechatLoginHandler(openId string, clientId string) bool {
 
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
+		avatar, err := utils.GenerateAvatar(uidStr)
+		name := randomname.GenerateName()
+		if err != nil {
+			global.LOG.Errorln(err)
+			return false
+		}
 		createUser := model.ScaAuthUser{
 			UID:      &uidStr,
 			Username: &openId,
+			Avatar:   &avatar,
+			Nickname: &name,
 		}
 
 		// 异步添加用户
@@ -193,7 +202,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 				errChan <- err
 				return
 			}
-			addUserChan <- &addUser
+			addUserChan <- addUser
 		}()
 
 		var addUser *model.ScaAuthUser
