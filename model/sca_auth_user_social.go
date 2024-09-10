@@ -29,7 +29,7 @@ func (*ScaAuthUserSocial) TableName() string {
 }
 
 func (social *ScaAuthUserSocial) BeforeUpdate(tx *gorm.DB) (err error) {
-	userId, b := global.DB.Get("user_id")
+	userId, b := tx.Get("user_id")
 	if !b {
 		global.LOG.Error("user_id is not found in global.DB")
 		return fmt.Errorf("user_id is not found in global.DB")

@@ -46,7 +46,7 @@ func (user *ScaAuthUser) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, user)
 }
 func (user *ScaAuthUser) BeforeCreate(tx *gorm.DB) (err error) {
-	userId, b := global.DB.Get("user_id")
+	userId, b := tx.Get("user_id")
 	if !b {
 		creator := "system"
 		user.CreatedBy = &creator
@@ -64,7 +64,7 @@ func (user *ScaAuthUser) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (user *ScaAuthUser) BeforeUpdate(tx *gorm.DB) (err error) {
-	userId, b := global.DB.Get("user_id")
+	userId, b := tx.Get("user_id")
 	if !b {
 		creator := "system"
 		user.CreatedBy = &creator

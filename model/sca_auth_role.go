@@ -36,7 +36,7 @@ func (role *ScaAuthRole) UnmarshalBinary(data []byte) error {
 }
 
 func (role *ScaAuthRole) BeforeCreate(tx *gorm.DB) (err error) {
-	userId, b := global.DB.Get("user_id")
+	userId, b := tx.Get("user_id")
 	if !b {
 		creator := "system"
 		role.CreatedBy = &creator
@@ -54,7 +54,7 @@ func (role *ScaAuthRole) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (role *ScaAuthRole) BeforeUpdate(tx *gorm.DB) (err error) {
-	userId, b := global.DB.Get("user_id")
+	userId, b := tx.Get("user_id")
 	if !b {
 		creator := "system"
 		role.CreatedBy = &creator
