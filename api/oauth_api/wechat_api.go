@@ -191,6 +191,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 			Username: &openId,
 			Avatar:   &avatar,
 			Nickname: &name,
+			Gender:   &enum.Male,
 		}
 
 		// 异步添加用户
