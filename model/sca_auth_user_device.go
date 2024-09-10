@@ -1,6 +1,9 @@
 package model
 
 import (
+	"fmt"
+	"gorm.io/gorm"
+	"schisandra-cloud-album/global"
 	"time"
 )
 
@@ -25,11 +28,27 @@ type ScaAuthUserDevice struct {
 	Platform        *string    `gorm:"column:platform;type:varchar(20);comment:平台" json:"platform"`                                  // 平台
 	EngineName      *string    `gorm:"column:engine_name;type:varchar(20);comment:引擎名称" json:"engine_name"`                          // 引擎名称
 	EngineVersion   *string    `gorm:"column:engine_version;type:varchar(20);comment:引擎版本" json:"engine_version"`                    // 引擎版本
-	CreatedBy       *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
+	CreatedBy       *string    `gorm:"column:created_by;type:varchar(32);default:system;comment:创建人" json:"created_by"`              // 创建人
 	UpdateBy        *string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"update_by"`
 }
 
 // TableName ScaAuthUserDevice's table name
 func (*ScaAuthUserDevice) TableName() string {
 	return TableNameScaAuthUserDevice
+}
+
+func (device *ScaAuthUserDevice) BeforeUpdate(tx *gorm.DB) (err error) {
+	userId, b := global.DB.Get("user_id")
+	if !b {
+		global.LOG.Error("user_id is not found in global.DB")
+		return fmt.Errorf("user_id is not found in global.DB")
+	}
+	userIdStr, ok := userId.(*string)
+	if !ok {
+		global.LOG.Error("user_id is not of type *string")
+		return fmt.Errorf("user_id is not of type *string")
+	}
+
+	device.UpdateBy = userIdStr
+	return nil
 }

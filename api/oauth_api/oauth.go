@@ -122,6 +122,7 @@ func HandelUserLogin(userId string) (bool, map[string]interface{}) {
 		"data":    data,
 		"success": true,
 	}
+	global.DB.Set("user_id", userId)
 	return true, responseData
 }
 

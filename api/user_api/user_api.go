@@ -344,7 +344,7 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
-
+	global.DB.Set("user_id", user.UID)
 	result.OkWithData(data, c)
 }
 
