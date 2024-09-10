@@ -47,8 +47,9 @@ func MySQlConnect() *gorm.DB {
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger:      mysqlLogger,
-		PrepareStmt: true,
+		SkipDefaultTransaction: true,
+		Logger:                 mysqlLogger,
+		PrepareStmt:            true,
 	})
 	if err != nil {
 		global.LOG.Fatalf(fmt.Sprintf("[%s] MySQL 连接失败", dsn))

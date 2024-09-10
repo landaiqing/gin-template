@@ -25,6 +25,8 @@ type ScaAuthUserDevice struct {
 	Platform        *string    `gorm:"column:platform;type:varchar(20);comment:平台" json:"platform"`                                  // 平台
 	EngineName      *string    `gorm:"column:engine_name;type:varchar(20);comment:引擎名称" json:"engine_name"`                          // 引擎名称
 	EngineVersion   *string    `gorm:"column:engine_version;type:varchar(20);comment:引擎版本" json:"engine_version"`                    // 引擎版本
+	CreatedBy       *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
+	UpdateBy        *string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"update_by"`
 }
 
 // TableName ScaAuthUserDevice's table name

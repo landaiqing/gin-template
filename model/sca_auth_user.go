@@ -26,6 +26,8 @@ type ScaAuthUser struct {
 	Blog        *string    `gorm:"column:blog;type:varchar(30);comment:博客" json:"blog"`                                          // 博客
 	Location    *string    `gorm:"column:location;type:varchar(50);comment:地址" json:"location"`                                  // 地址
 	Company     *string    `gorm:"column:company;type:varchar(50);comment:公司" json:"company"`                                    // 公司
+	CreatedBy   *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
+	UpdateBy    *string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"update_by"`                               // 更新人
 }
 
 // TableName ScaAuthUser's table name

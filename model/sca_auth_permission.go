@@ -23,6 +23,8 @@ type ScaAuthPermission struct {
 	UpdateTime     *time.Time `gorm:"column:update_time;type:datetime;default:CURRENT_TIMESTAMP;comment:更新时间" json:"update_time"`   // 更新时间
 	Deleted        *int64     `gorm:"column:deleted;type:int(11);comment:是否删除" json:"deleted"`                                      // 是否删除
 	Remark         *string    `gorm:"column:remark;type:varchar(255);comment:备注 描述" json:"remark"`                                  // 备注 描述
+	CreatedBy      *string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"created_by"`                             // 创建人
+	UpdateBy       *string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"update_by"`
 }
 
 // TableName ScaAuthPermission's table name
