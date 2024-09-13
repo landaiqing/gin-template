@@ -2,9 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
-	"gorm.io/gorm"
-	"schisandra-cloud-album/global"
 	"time"
 )
 
@@ -44,39 +41,4 @@ func (user *ScaAuthUser) MarshalBinary() ([]byte, error) {
 
 func (user *ScaAuthUser) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, user)
-}
-func (user *ScaAuthUser) BeforeCreate(tx *gorm.DB) (err error) {
-	userId, b := tx.Get("user_id")
-	if !b {
-		creator := "system"
-		user.CreatedBy = &creator
-		return nil
-	}
-
-	userIdStr, ok := userId.(*string)
-	if !ok {
-		global.LOG.Error("user_id is not of type *string")
-		return fmt.Errorf("user_id is not of type *string")
-	}
-
-	user.CreatedBy = userIdStr
-	return nil
-}
-
-func (user *ScaAuthUser) BeforeUpdate(tx *gorm.DB) (err error) {
-	userId, b := tx.Get("user_id")
-	if !b {
-		creator := "system"
-		user.CreatedBy = &creator
-		return nil
-	}
-
-	userIdStr, ok := userId.(*string)
-	if !ok {
-		global.LOG.Error("user_id is not of type *string")
-		return fmt.Errorf("user_id is not of type *string")
-	}
-
-	user.UpdateBy = userIdStr
-	return nil
 }

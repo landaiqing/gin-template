@@ -1,5 +1,7 @@
 package model
 
+const ScaAuthCasbinRuleTableName = "sca_auth_casbin_rule"
+
 // ScaAuthCasbinRule 角色/权限/用户关系表
 type ScaAuthCasbinRule struct {
 	Id    uint64 `gorm:"column:id;type:bigint(20) unsigned;primary_key;AUTO_INCREMENT" json:"id"`
@@ -13,5 +15,5 @@ type ScaAuthCasbinRule struct {
 }
 
 func (m *ScaAuthCasbinRule) TableName() string {
-	return "sca_auth_casbin_rule"
+	return ScaAuthCasbinRuleTableName
 }

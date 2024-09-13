@@ -1,5 +1,7 @@
 package model
 
+const ScaCommentLikesTableName = "sca_comment_likes"
+
 // ScaCommentLikes 评论点赞表
 type ScaCommentLikes struct {
 	Id        int64  `gorm:"column:id;type:bigint(20);primary_key" json:"id"`
@@ -8,5 +10,5 @@ type ScaCommentLikes struct {
 }
 
 func (like *ScaCommentLikes) TableName() string {
-	return "sca_comment_likes"
+	return ScaCommentLikesTableName
 }

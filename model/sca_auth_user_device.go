@@ -1,9 +1,6 @@
 package model
 
 import (
-	"fmt"
-	"gorm.io/gorm"
-	"schisandra-cloud-album/global"
 	"time"
 )
 
@@ -35,20 +32,4 @@ type ScaAuthUserDevice struct {
 // TableName ScaAuthUserDevice's table name
 func (*ScaAuthUserDevice) TableName() string {
 	return TableNameScaAuthUserDevice
-}
-
-func (device *ScaAuthUserDevice) BeforeUpdate(tx *gorm.DB) (err error) {
-	userId, b := tx.Get("user_id")
-	if !b {
-		global.LOG.Error("user_id is not found in global.DB")
-		return fmt.Errorf("user_id is not found in global.DB")
-	}
-	userIdStr, ok := userId.(*string)
-	if !ok {
-		global.LOG.Error("user_id is not of type *string")
-		return fmt.Errorf("user_id is not of type *string")
-	}
-
-	device.UpdateBy = userIdStr
-	return nil
 }
