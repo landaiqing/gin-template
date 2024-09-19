@@ -89,7 +89,6 @@ func ParseAccessToken(tokenString string) (*AccessJWTPayload, bool, error) {
 		return MySecret, nil
 	})
 	if err != nil {
-		global.LOG.Error(err)
 		return nil, false, err
 	}
 	if claims, ok := token.Claims.(*AccessJWTClaims); ok && token.Valid {

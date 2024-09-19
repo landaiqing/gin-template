@@ -3,6 +3,7 @@ package api
 import (
 	"schisandra-cloud-album/api/captcha_api"
 	"schisandra-cloud-album/api/client_api"
+	"schisandra-cloud-album/api/comment_api"
 	"schisandra-cloud-album/api/oauth_api"
 	"schisandra-cloud-album/api/permission_api"
 	"schisandra-cloud-album/api/role_api"
@@ -21,6 +22,7 @@ type Apis struct {
 	RoleApi       role_api.RoleAPI
 	PermissionApi permission_api.PermissionAPI
 	ClientApi     client_api.ClientAPI
+	CommonApi     comment_api.CommentAPI
 }
 
 // Api new函数实例化，实例化完成后会返回结构体地指针类型
