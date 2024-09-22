@@ -9,6 +9,7 @@ import (
 	"github.com/wenlng/go-captcha/v2/click"
 	"github.com/wenlng/go-captcha/v2/rotate"
 	"github.com/wenlng/go-captcha/v2/slide"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"schisandra-cloud-album/config"
 )
@@ -28,4 +29,5 @@ var (
 	Wechat             *officialAccount.OfficialAccount // 微信公众号
 	Casbin             *casbin.CachedEnforcer           // casbin权限管理器
 	IP2Location        *xdb.Searcher                    // IP地址定位
+	MongoDB            *mongo.Client
 )

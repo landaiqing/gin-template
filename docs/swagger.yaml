@@ -15,11 +15,33 @@ definitions:
           $ref: '#/definitions/model.ScaAuthPermission'
         type: array
     type: object
+  dto.AddPermissionToRoleRequestDto:
+    properties:
+      method:
+        type: string
+      permission:
+        type: string
+      role_key:
+        type: string
+    type: object
   dto.AddRoleToUserRequestDto:
     properties:
       role_key:
         type: string
       uid:
+        type: string
+    type: object
+  dto.CommentRequest:
+    properties:
+      content:
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      topic_id:
+        type: string
+      user_id:
         type: string
     type: object
   dto.PhoneLoginRequest:
@@ -29,6 +51,23 @@ definitions:
       captcha:
         type: string
       phone:
+        type: string
+    type: object
+  dto.ReplyCommentRequest:
+    properties:
+      content:
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      reply_id:
+        type: string
+      reply_user:
+        type: string
+      topic_id:
+        type: string
+      user_id:
         type: string
     type: object
   dto.ResetPasswordRequest:
@@ -94,7 +133,6 @@ definitions:
         description: 类型 0 菜单 1 目录 2 按钮 -1其他
         type: integer
       update_by:
-        description: 更新人
         type: string
       update_time:
         description: 更新时间
@@ -119,6 +157,24 @@ paths:
       - application/json
       responses: {}
       summary: 批量添加权限
+      tags:
+      - 权限管理
+  /api/auth/permission/assign:
+    post:
+      consumes:
+      - application/json
+      description: 给指定角色分配权限
+      parameters:
+      - description: 权限列表
+        in: body
+        name: permissions
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddPermissionToRoleRequestDto'
+      produces:
+      - application/json
+      responses: {}
+      summary: 给指定角色分配权限
       tags:
       - 权限管理
   /api/auth/role/add_role_to_user:
@@ -181,6 +237,16 @@ paths:
           schema:
             type: string
       summary: 删除用户
+      tags:
+      - 用户模块
+  /api/auth/user/logout:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 退出登录
       tags:
       - 用户模块
   /api/auth/user/query_by_phone:
@@ -358,6 +424,42 @@ paths:
       summary: 生成基础文字验证码
       tags:
       - 基础文字验证码
+  /api/comment/reply:
+    post:
+      consumes:
+      - application/json
+      description: 提交回复
+      parameters:
+      - description: 回复评论请求
+        in: body
+        name: reply_comment_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReplyCommentRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 提交回复
+      tags:
+      - 评论
+  /api/comment/submit:
+    post:
+      consumes:
+      - application/json
+      description: 提交评论
+      parameters:
+      - description: 评论请求
+        in: body
+        name: comment_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CommentRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 提交评论
+      tags:
+      - 评论
   /api/oauth/callback_notify:
     post:
       description: 微信回调
@@ -593,13 +695,6 @@ paths:
       description: 创建websocket服务
       responses: {}
       summary: 创建websocket服务
-      tags:
-      - websocket
-  /api/ws/socket:
-    get:
-      description: 创建websocket服务
-      responses: {}
-      summary: 创建websocket服务(gorilla)
       tags:
       - websocket
 swagger: "2.0"

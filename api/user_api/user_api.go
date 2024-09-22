@@ -2,7 +2,6 @@ package user_api
 
 import (
 	"errors"
-	"github.com/DanPlayer/randomname"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
@@ -12,6 +11,7 @@ import (
 	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
+	"schisandra-cloud-album/common/randomname"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"

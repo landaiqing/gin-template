@@ -12,4 +12,5 @@ type Config struct {
 	OAuth   OAuth   `yaml:"oauth"`
 	Swagger Swagger `yaml:"swagger"`
 	Casbin  Casbin  `yaml:"casbin"`
+	MongoDB MongoDB `yaml:"mongodb"`
 }

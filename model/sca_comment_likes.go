@@ -6,7 +6,8 @@ const ScaCommentLikesTableName = "sca_comment_likes"
 type ScaCommentLikes struct {
 	Id        int64  `gorm:"column:id;type:bigint(20);primary_key" json:"id"`
 	UserId    string `gorm:"column:user_id;type:varchar(20);comment:用户ID;NOT NULL" json:"user_id"`
-	CommentId int64  `gorm:"column:comment_id;type:bigint(20);comment:评论ID" json:"comment_id"`
+	CommentId int64  `gorm:"column:comment_id;type:bigint(20);comment:评论ID;NOT NULL" json:"comment_id"`
+	Type      int    `gorm:"column:type;type:int(11);comment:类型，0 点赞 1 踩;NOT NULL" json:"type"`
 }
 
 func (like *ScaCommentLikes) TableName() string {

@@ -2,7 +2,7 @@ package client_api
 
 import (
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -31,12 +31,16 @@ func (ClientAPI) GenerateClientId(c *gin.Context) {
 		return
 	}
 	// 生成新的客户端ID
-	v1 := uuid.NewV1()
-	err := redis.Set(constant.UserLoginClientRedisKey+ip, v1.String(), time.Hour*24*7).Err()
+	uid, err := uuid.NewUUID()
 	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
-	result.OkWithData(v1.String(), c)
+	err = redis.Set(constant.UserLoginClientRedisKey+ip, uid, time.Hour*24*7).Err()
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	result.OkWithData(uid, c)
 	return
 }

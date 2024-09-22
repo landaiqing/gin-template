@@ -13,6 +13,7 @@ func main() {
 	core.InitConfig()      // 读取配置文件
 	core.InitLogger()      // 初始化日志
 	core.InitGorm()        // 初始化数据库
+	core.InitMongoDB()     // 初始化MongoDB
 	core.InitRedis()       // 初始化redis
 	core.InitCaptcha()     // 初始化验证码
 	core.InitIDGenerator() // 初始化ID生成器

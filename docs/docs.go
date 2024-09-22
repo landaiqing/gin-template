@@ -42,6 +42,33 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/api/auth/permission/assign": {
+            "post": {
+                "description": "给指定角色分配权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "权限管理"
+                ],
+                "summary": "给指定角色分配权限",
+                "parameters": [
+                    {
+                        "description": "权限列表",
+                        "name": "permissions",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddPermissionToRoleRequestDto"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/api/auth/role/add_role_to_user": {
             "post": {
                 "description": "给指定用户添加角色",
@@ -127,6 +154,22 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/user/logout": {
+            "post": {
+                "tags": [
+                    "用户模块"
+                ],
+                "summary": "退出登录",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -403,6 +446,60 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/api/comment/reply": {
+            "post": {
+                "description": "提交回复",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "提交回复",
+                "parameters": [
+                    {
+                        "description": "回复评论请求",
+                        "name": "reply_comment_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReplyCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/comment/submit": {
+            "post": {
+                "description": "提交评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "提交评论",
+                "parameters": [
+                    {
+                        "description": "评论请求",
+                        "name": "comment_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CommentRequest"
+                        }
+                    }
+                ],
+                "responses": {}
             }
         },
         "/api/oauth/callback_notify": {
@@ -762,16 +859,6 @@ const docTemplate = `{
                 "summary": "创建websocket服务",
                 "responses": {}
             }
-        },
-        "/api/ws/socket": {
-            "get": {
-                "description": "创建websocket服务",
-                "tags": [
-                    "websocket"
-                ],
-                "summary": "创建websocket服务(gorilla)",
-                "responses": {}
-            }
         }
     },
     "definitions": {
@@ -800,6 +887,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AddPermissionToRoleRequestDto": {
+            "type": "object",
+            "properties": {
+                "method": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
+                },
+                "role_key": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.AddRoleToUserRequestDto": {
             "type": "object",
             "properties": {
@@ -807,6 +908,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CommentRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "topic_id": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -821,6 +942,32 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ReplyCommentRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "reply_id": {
+                    "type": "string"
+                },
+                "reply_user": {
+                    "type": "string"
+                },
+                "topic_id": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -913,7 +1060,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "update_by": {
-                    "description": "更新人",
                     "type": "string"
                 },
                 "update_time": {

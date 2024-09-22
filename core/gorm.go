@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/acmestack/gorm-plus/gplus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -61,5 +62,7 @@ func MySQlConnect() *gorm.DB {
 	sqlDB.SetMaxIdleConns(global.CONFIG.MySQL.MaxIdleConnes)
 	sqlDB.SetMaxOpenConns(global.CONFIG.MySQL.MaxOpenConnes)
 	sqlDB.SetConnMaxLifetime(time.Hour * 4) //连接最大复用时间
+	// 初始化gplus
+	gplus.Init(db)
 	return db
 }
