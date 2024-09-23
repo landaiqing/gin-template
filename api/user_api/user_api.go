@@ -344,6 +344,11 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
+	err = utils.SetSession(c, "user", data)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+		return
+	}
 	result.OkWithData(data, c)
 }
 

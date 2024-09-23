@@ -43,6 +43,17 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		uid := c.GetHeader("X-UID")
+		if uid == "" {
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
+			c.Abort()
+			return
+		}
+		if *parseToken.UserID != uid {
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
+			c.Abort()
+			return
+		}
 		token := redis.Get(constant.UserLoginTokenRedisKey + *parseToken.UserID).Val()
 		if token == "" {
 			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)

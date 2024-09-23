@@ -48,7 +48,8 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 		global.LOG.Error(err)
 		return
 	}
-	formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.Web)
+
+	formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.WebURL())
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
 	return
 }

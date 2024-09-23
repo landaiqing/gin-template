@@ -16,5 +16,6 @@ func InitRedis() {
 		MinIdleConns:   global.CONFIG.Redis.MinIdle,
 		PoolTimeout:    global.CONFIG.Redis.PoolTimeout,
 	})
+	InitSession(rdb)
 	global.REDIS = rdb
 }

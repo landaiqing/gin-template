@@ -20,9 +20,9 @@ func InitRouter() *gin.Engine {
 	router.Use(middleware.RateLimitMiddleware(time.Millisecond*100, 20)) // 限流中间件
 	// 跨域设置
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{global.CONFIG.System.Web},
+		AllowOrigins:     []string{global.CONFIG.System.WebURL()},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language", "X-Sign", "X-Timestamp", "X-Nonce"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language", "X-Sign", "X-Timestamp", "X-Nonce", "X-UID"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))

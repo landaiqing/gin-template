@@ -36,11 +36,11 @@ func (ClientAPI) GenerateClientId(c *gin.Context) {
 		global.LOG.Error(err)
 		return
 	}
-	err = redis.Set(constant.UserLoginClientRedisKey+ip, uid, time.Hour*24*7).Err()
+	err = redis.Set(constant.UserLoginClientRedisKey+ip, uid.String(), time.Hour*24*7).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
-	result.OkWithData(uid, c)
+	result.OkWithData(uid.String(), c)
 	return
 }

@@ -1,13 +1,10 @@
 package constant
 
 const (
-	UserLoginSmsRedisKey       = "user:login:sms:"
-	UserLoginTokenRedisKey     = "user:login:token:"
-	UserLoginCaptchaRedisKey   = "user:login:captcha:"
-	UserAuthRoleRedisKey       = "user:auth:role:"
-	UserAuthPermissionRedisKey = "user:auth:permission:"
-	UserLoginClientRedisKey    = "user:login:client:"
-	UserLoginQrcodeRedisKey    = "user:login:qrcode:"
-	UserLoginWechatRedisKey    = "user:wechat:token:"
-	SystemApiNonceRedisKey     = "system:api:nonce:"
+	UserLoginSmsRedisKey     = "user:sms:"
+	UserLoginTokenRedisKey   = "user:token:"
+	UserLoginCaptchaRedisKey = "user:captcha:"
+	UserLoginClientRedisKey  = "user:client:"
+	UserLoginQrcodeRedisKey  = "user:qrcode:"
+	UserSessionRedisKey      = "user:session:"
 )

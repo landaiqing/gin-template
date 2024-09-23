@@ -6,9 +6,8 @@ import (
 
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//url := strings.TrimPrefix(global.CONFIG.System.Web, "https://")
 		//requestHost := c.Request.Host
-		//if requestHost != url {
+		//if requestHost != global.CONFIG.System.Web {
 		//	result.FailWithMessage(ginI18n.MustGetMessage(c, "IllegalRequests"), c)
 		//	c.Abort()
 		//	return
