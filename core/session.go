@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/rbcervilla/redisstore/v9"
 	"github.com/redis/go-redis/v9"
+	"net/http"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/global"
 )
@@ -20,7 +21,10 @@ func InitSession(client *redis.Client) {
 	store.Options(sessions.Options{
 		Path: "/",
 		//Domain: global.CONFIG.System.Web,
-		MaxAge: 86400 * 7,
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
 	})
 	global.Session = store
 }

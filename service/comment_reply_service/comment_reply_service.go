@@ -1,6 +1,8 @@
 package comment_reply_service
 
 import (
+	"fmt"
+	"gorm.io/gorm"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 )
@@ -37,4 +39,20 @@ func (CommentReplyService) GetCommentListOrderByLikesDesc(topicID uint, page, pa
 		return nil, err
 	}
 	return comments, nil
+}
+
+// UpdateCommentReplyCount 更新评论
+func (CommentReplyService) UpdateCommentReplyCount(commentID int64) error {
+	// 使用事务处理错误
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.ScaCommentReply{}).Where("id = ?", commentID).Update("reply_count", gorm.Expr("reply_count + ?", 1))
+		if result.Error != nil {
+			return result.Error // 返回更新错误
+		}
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("comment not found") // 处理评论不存在的情况
+		}
+		return nil
+	})
+	return err
 }
