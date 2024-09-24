@@ -45,7 +45,7 @@ func (CommentReplyService) GetCommentListOrderByLikesDesc(topicID uint, page, pa
 func (CommentReplyService) UpdateCommentReplyCount(commentID int64) error {
 	// 使用事务处理错误
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
-		result := tx.Model(&model.ScaCommentReply{}).Where("id = ?", commentID).Update("reply_count", gorm.Expr("reply_count + ?", 1))
+		result := tx.Model(&model.ScaCommentReply{}).Where("id = ? and deleted = 0", commentID).Update("reply_count", gorm.Expr("reply_count + ?", 1))
 		if result.Error != nil {
 			return result.Error // 返回更新错误
 		}

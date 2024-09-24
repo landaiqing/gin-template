@@ -118,10 +118,6 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 	}
 	account := accountLoginRequest.Account
 	password := accountLoginRequest.Password
-	if account == "" || password == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "AccountAndPasswordNotEmpty"), c)
-		return
-	}
 
 	var user model.ScaAuthUser
 	if utils.IsPhone(account) {
@@ -163,10 +159,6 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 	phone := request.Phone
 	captcha := request.Captcha
 	autoLogin := request.AutoLogin
-	if phone == "" || captcha == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneAndCaptchaNotEmpty"), c)
-		return
-	}
 	if !utils.IsPhone(phone) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
 		return
@@ -273,10 +265,6 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		return
 	}
 	refreshToken := request.RefreshToken
-	if refreshToken == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
 	parseRefreshToken, isUpd, err := utils.ParseRefreshToken(refreshToken)
 	if err != nil || !isUpd {
 		global.LOG.Errorln(err)
@@ -369,12 +357,6 @@ func (UserAPI) ResetPassword(c *gin.Context) {
 	captcha := resetPasswordRequest.Captcha
 	password := resetPasswordRequest.Password
 	repassword := resetPasswordRequest.Repassword
-
-	if phone == "" || captcha == "" || password == "" || repassword == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
-
 	if !utils.IsPhone(phone) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneError"), c)
 		return

@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"schisandra-cloud-album/global"
@@ -24,6 +23,9 @@ func InitMongoDB() {
 		Password:                global.CONFIG.MongoDB.Password,
 		PasswordSet:             true,
 	})
+	clientOptions.SetConnectTimeout(time.Duration(global.CONFIG.MongoDB.Timeout) * time.Second)
+	clientOptions.SetMaxPoolSize(global.CONFIG.MongoDB.MaxOpenConn)
+	clientOptions.SetMaxConnecting(global.CONFIG.MongoDB.MaxIdleConn)
 	connect, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		global.LOG.Fatalf(err.Error())
@@ -36,5 +38,4 @@ func InitMongoDB() {
 		return
 	}
 	global.MongoDB = connect
-	fmt.Println("Connected to MongoDB!")
 }

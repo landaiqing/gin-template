@@ -301,11 +301,11 @@ func handelUserLogin(userId string, clientId string) bool {
 			resultChan <- false
 			return
 		}
-		responseData := map[string]interface{}{
-			"code":    0,
-			"message": "success",
-			"data":    data,
-			"success": true,
+		responseData := result.Response{
+			Data:    data,
+			Message: "success",
+			Code:    200,
+			Success: true,
 		}
 		tokenData, err := json.Marshal(responseData)
 		if err != nil {

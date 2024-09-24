@@ -9,8 +9,9 @@ type MongoDB struct {
 	DB          string `yaml:"db"`
 	User        string `yaml:"user"`
 	Password    string `yaml:"password"`
-	MaxOpenConn int    `yaml:"max-open-conn"`
-	MaxIdleConn int    `yaml:"max-idle-conn"`
+	MaxOpenConn uint64 `yaml:"max-open-conn"`
+	MaxIdleConn uint64 `yaml:"max-idle-conn"`
+	Timeout     int    `yaml:"timeout"`
 }
 
 func (m *MongoDB) MongoDsn() string {

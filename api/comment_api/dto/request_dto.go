@@ -1,41 +1,47 @@
 package dto
 
 type CommentRequest struct {
-	Content string   `json:"content"`
+	Content string   `json:"content" binding:"required"`
 	Images  []string `json:"images"`
-	UserID  string   `json:"user_id"`
-	TopicId string   `json:"topic_id"`
-	Author  string   `json:"author"`
+	UserID  string   `json:"user_id" binding:"required"`
+	TopicId string   `json:"topic_id" binding:"required"`
+	Author  string   `json:"author" binding:"required"`
 }
 type ReplyCommentRequest struct {
-	Content   string   `json:"content"`
+	Content   string   `json:"content" binding:"required"`
 	Images    []string `json:"images"`
-	UserID    string   `json:"user_id"`
-	TopicId   string   `json:"topic_id"`
-	ReplyId   int64    `json:"reply_id"`
-	ReplyUser string   `json:"reply_user"`
-	Author    string   `json:"author"`
+	UserID    string   `json:"user_id" binding:"required"`
+	TopicId   string   `json:"topic_id" binding:"required"`
+	ReplyId   int64    `json:"reply_id" binding:"required"`
+	ReplyUser string   `json:"reply_user" binding:"required"`
+	Author    string   `json:"author" binding:"required"`
 }
 
 type ReplyReplyRequest struct {
-	Content   string   `json:"content"`
+	Content   string   `json:"content" binding:"required"`
 	Images    []string `json:"images"`
-	UserID    string   `json:"user_id"`
-	TopicId   string   `json:"topic_id"`
-	ReplyTo   int64    `json:"reply_to"`
-	ReplyId   int64    `json:"reply_id"`
-	ReplyUser string   `json:"reply_user"`
-	Author    string   `json:"author"`
+	UserID    string   `json:"user_id" binding:"required"`
+	TopicId   string   `json:"topic_id" binding:"required"`
+	ReplyTo   int64    `json:"reply_to" binding:"required"`
+	ReplyId   int64    `json:"reply_id" binding:"required"`
+	ReplyUser string   `json:"reply_user" binding:"required"`
+	Author    string   `json:"author" binding:"required""`
 }
 
 type CommentListRequest struct {
-	TopicId string `json:"topic_id"`
+	TopicId string `json:"topic_id" binding:"required"`
 	Page    int    `json:"page" default:"1"`
 	Size    int    `json:"size" default:"5"`
 }
 type ReplyListRequest struct {
-	TopicId   string `json:"topic_id"`
-	CommentId int64  `json:"comment_id"`
+	TopicId   string `json:"topic_id" binding:"required"`
+	CommentId int64  `json:"comment_id" binding:"required"`
 	Page      int    `json:"page" default:"1"`
 	Size      int    `json:"size" default:"5"`
+}
+type CommentLikeRequest struct {
+	TopicId   string `json:"topic_id" binding:"required"`
+	CommentId int64  `json:"comment_id" binding:"required"`
+	UserID    string `json:"user_id" binding:"required"`
+	Type      int    `json:"type" binding:"required"`
 }

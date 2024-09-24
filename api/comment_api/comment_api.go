@@ -11,16 +11,12 @@ import (
 	"github.com/mssola/useragent"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"io"
-	"regexp"
 	"schisandra-cloud-album/api/comment_api/dto"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/utils"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -35,11 +31,6 @@ import (
 func (CommentAPI) CommentSubmit(c *gin.Context) {
 	commentRequest := dto.CommentRequest{}
 	if err := c.ShouldBindJSON(&commentRequest); err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
-
-	if commentRequest.Content == "" || commentRequest.UserID == "" || commentRequest.TopicId == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
@@ -69,12 +60,14 @@ func (CommentAPI) CommentSubmit(c *gin.Context) {
 	if commentRequest.UserID == commentRequest.Author {
 		isAuthor = 1
 	}
+
 	tx := global.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
+
 	commentReply := model.ScaCommentReply{
 		Content:         commentRequest.Content,
 		UserId:          commentRequest.UserID,
@@ -88,26 +81,38 @@ func (CommentAPI) CommentSubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
+	// 使用 goroutine 进行异步评论保存
+	errCh := make(chan error, 2)
+	go func() {
+		errCh <- commentReplyService.CreateCommentReply(&commentReply)
+	}()
 
-	if err = commentReplyService.CreateCommentReply(&commentReply); err != nil {
+	// 等待评论回复的创建
+	if err = <-errCh; err != nil {
+		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		tx.Rollback()
 		return
 	}
 
+	// 处理图片异步上传
 	if len(commentRequest.Images) > 0 {
-
-		var imagesData [][]byte
-		for _, img := range commentRequest.Images {
-			re := regexp.MustCompile(`^data:image/\w+;base64,`)
-			imgWithoutPrefix := re.ReplaceAllString(img, "")
-			data, err := base64ToBytes(imgWithoutPrefix)
+		imagesDataCh := make(chan [][]byte)
+		go func() {
+			imagesData, err := processImages(commentRequest.Images)
 			if err != nil {
 				global.LOG.Errorln(err)
-				tx.Rollback()
+				imagesDataCh <- nil // 发送失败信号
 				return
 			}
-			imagesData = append(imagesData, data)
+			imagesDataCh <- imagesData // 发送处理成功的数据
+		}()
+
+		imagesData := <-imagesDataCh
+		if imagesData == nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+			tx.Rollback()
+			return
 		}
 
 		commentImages := CommentImages{
@@ -117,26 +122,17 @@ func (CommentAPI) CommentSubmit(c *gin.Context) {
 			Images:    imagesData,
 			CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
-		if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
-			global.LOG.Errorln(err)
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
-			tx.Rollback()
-			return
-		}
+
+		// 使用 goroutine 进行异步图片保存
+		go func() {
+			if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
+				global.LOG.Errorln(err)
+			}
+		}()
 	}
 	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
 	return
-}
-
-// base64ToBytes 将base64字符串转换为字节数组
-func base64ToBytes(base64Str string) ([]byte, error) {
-	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Str))
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, errors.New("failed to decode base64 string")
-	}
-	return data, nil
 }
 
 // ReplySubmit 提交回复
@@ -154,14 +150,6 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 		return
 	}
 
-	if replyCommentRequest.Content == "" ||
-		replyCommentRequest.UserID == "" ||
-		replyCommentRequest.TopicId == "" ||
-		strconv.FormatInt(replyCommentRequest.ReplyId, 10) == "" ||
-		replyCommentRequest.ReplyUser == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
 	if len(replyCommentRequest.Images) > 3 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "TooManyImages"), c)
 		return
@@ -172,8 +160,8 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 		global.LOG.Errorln("user-agent is empty")
 		return
 	}
-	ua := useragent.New(userAgent)
 
+	ua := useragent.New(userAgent)
 	ip := utils.GetClientIP(c)
 	location, err := global.IP2Location.SearchByStr(ip)
 	if err != nil {
@@ -188,12 +176,14 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 	if replyCommentRequest.UserID == replyCommentRequest.Author {
 		isAuthor = 1
 	}
+
 	tx := global.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
+
 	commentReply := model.ScaCommentReply{
 		Content:         replyCommentRequest.Content,
 		UserId:          replyCommentRequest.UserID,
@@ -209,33 +199,44 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
+	// 使用 goroutine 进行异步评论保存
+	errCh := make(chan error)
+	go func() {
 
-	if err = commentReplyService.CreateCommentReply(&commentReply); err != nil {
+		errCh <- commentReplyService.CreateCommentReply(&commentReply)
+	}()
+	go func() {
+
+		errCh <- commentReplyService.UpdateCommentReplyCount(replyCommentRequest.ReplyId)
+	}()
+	// 等待评论回复的创建
+	if err = <-errCh; err != nil {
+		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		tx.Rollback()
 		return
 	}
-	err = commentReplyService.UpdateCommentReplyCount(replyCommentRequest.ReplyId)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
-		tx.Rollback()
-		return
-	}
 
+	// 处理图片异步上传
 	if len(replyCommentRequest.Images) > 0 {
-
-		var imagesData [][]byte
-		for _, img := range replyCommentRequest.Images {
-			re := regexp.MustCompile(`^data:image/\w+;base64,`)
-			imgWithoutPrefix := re.ReplaceAllString(img, "")
-			data, err := base64ToBytes(imgWithoutPrefix)
+		imagesDataCh := make(chan [][]byte)
+		go func() {
+			imagesData, err := processImages(replyCommentRequest.Images)
 			if err != nil {
 				global.LOG.Errorln(err)
-				tx.Rollback()
+				imagesDataCh <- nil // 发送失败信号
 				return
 			}
-			imagesData = append(imagesData, data)
+			imagesDataCh <- imagesData // 发送处理成功的数据
+		}()
+
+		imagesData := <-imagesDataCh
+		if imagesData == nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+			tx.Rollback()
+			return
 		}
+
 		commentImages := CommentImages{
 			TopicId:   replyCommentRequest.TopicId,
 			CommentId: commentReply.Id,
@@ -243,12 +244,13 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 			Images:    imagesData,
 			CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
-		if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
-			global.LOG.Errorln(err)
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
-			tx.Rollback()
-			return
-		}
+
+		// 使用 goroutine 进行异步图片保存
+		go func() {
+			if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
+				global.LOG.Errorln(err)
+			}
+		}()
 	}
 	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
@@ -270,15 +272,6 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 		return
 	}
 
-	if replyReplyRequest.Content == "" ||
-		replyReplyRequest.UserID == "" ||
-		replyReplyRequest.TopicId == "" ||
-		replyReplyRequest.ReplyTo == 0 ||
-		replyReplyRequest.ReplyId == 0 ||
-		replyReplyRequest.ReplyUser == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
 	if len(replyReplyRequest.Images) > 3 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "TooManyImages"), c)
 		return
@@ -289,8 +282,8 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 		global.LOG.Errorln("user-agent is empty")
 		return
 	}
-	ua := useragent.New(userAgent)
 
+	ua := useragent.New(userAgent)
 	ip := utils.GetClientIP(c)
 	location, err := global.IP2Location.SearchByStr(ip)
 	if err != nil {
@@ -305,12 +298,14 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 	if replyReplyRequest.UserID == replyReplyRequest.Author {
 		isAuthor = 1
 	}
+
 	tx := global.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
+
 	commentReply := model.ScaCommentReply{
 		Content:         replyReplyRequest.Content,
 		UserId:          replyReplyRequest.UserID,
@@ -328,32 +323,40 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 		Agent:           userAgent,
 	}
 
-	if err = commentReplyService.CreateCommentReply(&commentReply); err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
-		tx.Rollback()
-		return
-	}
-	err = commentReplyService.UpdateCommentReplyCount(replyReplyRequest.ReplyId)
-	if err != nil {
+	errCh := make(chan error, 2)
+	go func() {
+		errCh <- commentReplyService.CreateCommentReply(&commentReply)
+	}()
+	go func() {
+		errCh <- commentReplyService.UpdateCommentReplyCount(replyReplyRequest.ReplyId)
+	}()
+
+	if err = <-errCh; err != nil {
+		global.LOG.Errorln(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		tx.Rollback()
 		return
 	}
 
 	if len(replyReplyRequest.Images) > 0 {
-
-		var imagesData [][]byte
-		for _, img := range replyReplyRequest.Images {
-			re := regexp.MustCompile(`^data:image/\w+;base64,`)
-			imgWithoutPrefix := re.ReplaceAllString(img, "")
-			data, err := base64ToBytes(imgWithoutPrefix)
+		imagesDataCh := make(chan [][]byte)
+		go func() {
+			imagesData, err := processImages(replyReplyRequest.Images)
 			if err != nil {
 				global.LOG.Errorln(err)
-				tx.Rollback()
+				imagesDataCh <- nil
 				return
 			}
-			imagesData = append(imagesData, data)
+			imagesDataCh <- imagesData
+		}()
+
+		imagesData := <-imagesDataCh
+		if imagesData == nil {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+			tx.Rollback()
+			return
 		}
+
 		commentImages := CommentImages{
 			TopicId:   replyReplyRequest.TopicId,
 			CommentId: commentReply.Id,
@@ -361,12 +364,13 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 			Images:    imagesData,
 			CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
-		if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
-			global.LOG.Errorln(err)
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
-			tx.Rollback()
-			return
-		}
+
+		// 处理图片保存
+		go func() {
+			if _, err = global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").InsertOne(context.Background(), commentImages); err != nil {
+				global.LOG.Errorln(err)
+			}
+		}()
 	}
 	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
@@ -388,38 +392,57 @@ func (CommentAPI) CommentList(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	if commentListRequest.TopicId == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](commentListRequest.Page, commentListRequest.Size)
 	query.Eq(&u.TopicId, commentListRequest.TopicId).Eq(&u.CommentType, enum.COMMENT).OrderByDesc(&u.Likes)
 	page, _ = gplus.SelectPage(page, query)
 
-	var commentsWithImages []CommentContent
-
+	userIds := make([]string, 0, len(page.Records))
 	for _, comment := range page.Records {
-		// 获取评论图片
-		commentImages := CommentImages{}
-		wrong := global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").FindOne(context.Background(), bson.M{"comment_id": comment.Id}).Decode(&commentImages)
-		if wrong != nil && !errors.Is(wrong, mongo.ErrNoDocuments) {
-			global.LOG.Errorln(wrong)
-		}
-		// 将图片转换为base64
-		var imagesBase64 []string
-		for _, img := range commentImages.Images {
-			mimeType := getMimeType(img) // 动态获取 MIME 类型
-			base64Img := base64.StdEncoding.EncodeToString(img)
-			base64WithPrefix := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Img)
-			imagesBase64 = append(imagesBase64, base64WithPrefix)
-		}
-		// 组装评论数据
-		queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
-		queryUser.Eq(&n.UID, comment.UserId)
-		userInfo, _ := gplus.SelectOne(queryUser)
-		commentsWithImages = append(commentsWithImages,
-			CommentContent{
+		userIds = append(userIds, comment.UserId)
+	}
+
+	queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
+	queryUser.In(&n.UID, userIds)
+	userInfos, _ := gplus.SelectList(queryUser)
+
+	userInfoMap := make(map[string]model.ScaAuthUser, len(userInfos))
+	for _, userInfo := range userInfos {
+		userInfoMap[*userInfo.UID] = *userInfo
+	}
+
+	commentChannel := make(chan CommentContent, len(page.Records))
+	imagesBase64S := make([][]string, len(page.Records)) // 存储每条评论的图片
+
+	for index, comment := range page.Records {
+		wg.Add(1)
+		go func(comment model.ScaCommentReply, index int) {
+			defer wg.Done()
+
+			// 使用 context 设置超时时间
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second) // 设置超时，2秒
+			defer cancel()
+
+			// 获取评论图片并处理
+			commentImages := CommentImages{}
+			wrong := global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").FindOne(ctx, bson.M{"comment_id": comment.Id}).Decode(&commentImages)
+			if wrong != nil && !errors.Is(wrong, mongo.ErrNoDocuments) {
+				global.LOG.Errorf("Failed to get images for comment ID %s: %v", comment.Id, wrong)
+				return
+			}
+
+			// 将图片转换为base64
+			var imagesBase64 []string
+			for _, img := range commentImages.Images {
+				mimeType := getMimeType(img)
+				base64Img := base64.StdEncoding.EncodeToString(img)
+				base64WithPrefix := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Img)
+				imagesBase64 = append(imagesBase64, base64WithPrefix)
+			}
+			imagesBase64S[index] = imagesBase64 // 保存到切片中
+
+			userInfo := userInfoMap[comment.UserId]
+			commentContent := CommentContent{
 				Avatar:          *userInfo.Avatar,
 				NickName:        *userInfo.Nickname,
 				Id:              comment.Id,
@@ -435,8 +458,21 @@ func (CommentAPI) CommentList(c *gin.Context) {
 				Browser:         comment.Browser,
 				OperatingSystem: comment.OperatingSystem,
 				Images:          imagesBase64,
-			})
+			}
+			commentChannel <- commentContent
+		}(*comment, index)
 	}
+
+	go func() {
+		wg.Wait()
+		close(commentChannel)
+	}()
+
+	var commentsWithImages []CommentContent
+	for commentContent := range commentChannel {
+		commentsWithImages = append(commentsWithImages, commentContent)
+	}
+
 	response := CommentResponse{
 		Comments: commentsWithImages,
 		Size:     page.Size,
@@ -445,30 +481,6 @@ func (CommentAPI) CommentList(c *gin.Context) {
 	}
 	result.OkWithData(response, c)
 	return
-}
-
-func getMimeType(data []byte) string {
-	if len(data) < 4 {
-		return "application/octet-stream" // 默认类型
-	}
-
-	// 判断 JPEG
-	if data[0] == 0xFF && data[1] == 0xD8 {
-		return "image/jpeg"
-	}
-
-	// 判断 PNG
-	if len(data) >= 8 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 &&
-		data[4] == 0x0D && data[5] == 0x0A && data[6] == 0x1A && data[7] == 0x0A {
-		return "image/png"
-	}
-
-	// 判断 GIF
-	if len(data) >= 6 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F' {
-		return "image/gif"
-	}
-
-	return "application/octet-stream" // 默认类型
 }
 
 // ReplyList 获取回复列表
@@ -486,69 +498,131 @@ func (CommentAPI) ReplyList(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	if replyListRequest.TopicId == "" || strconv.FormatInt(replyListRequest.CommentId, 10) == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](replyListRequest.Page, replyListRequest.Size)
 	query.Eq(&u.TopicId, replyListRequest.TopicId).Eq(&u.ReplyId, replyListRequest.CommentId).Eq(&u.CommentType, enum.REPLY).OrderByDesc(&u.Likes)
 	page, _ = gplus.SelectPage(page, query)
 
-	var commentsWithImages []CommentContent
+	userIds := make([]string, 0, len(page.Records))
+	replyUserIds := make([]string, 0, len(page.Records))
 
+	// 收集用户 ID 和回复用户 ID
 	for _, comment := range page.Records {
-		// 获取评论图片
-		commentImages := CommentImages{}
-		wrong := global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").FindOne(context.Background(), bson.M{"comment_id": comment.Id}).Decode(&commentImages)
-		if wrong != nil && !errors.Is(wrong, mongo.ErrNoDocuments) {
-			global.LOG.Errorln(wrong)
+		userIds = append(userIds, comment.UserId)
+		if comment.ReplyUser != "" {
+			replyUserIds = append(replyUserIds, comment.ReplyUser)
 		}
-		// 将图片转换为base64
-		var imagesBase64 []string
-		for _, img := range commentImages.Images {
-			mimeType := getMimeType(img) // 动态获取 MIME 类型
-			base64Img := base64.StdEncoding.EncodeToString(img)
-			base64WithPrefix := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Img)
-			imagesBase64 = append(imagesBase64, base64WithPrefix)
-		}
-		// 查询评论用户信息
-		queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
-		queryUser.Eq(&n.UID, comment.UserId)
-		userInfo, _ := gplus.SelectOne(queryUser)
-		// 查询回复用户信息
+	}
+
+	// 查询评论用户信息
+	queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
+	queryUser.In(&n.UID, userIds)
+	userInfos, _ := gplus.SelectList(queryUser)
+
+	userInfoMap := make(map[string]model.ScaAuthUser, len(userInfos))
+	for _, userInfo := range userInfos {
+		userInfoMap[*userInfo.UID] = *userInfo
+	}
+
+	// 查询回复用户信息
+	replyUserInfoMap := make(map[string]model.ScaAuthUser)
+	if len(replyUserIds) > 0 {
 		queryReplyUser, m := gplus.NewQuery[model.ScaAuthUser]()
-		queryReplyUser.Eq(&m.UID, comment.ReplyUser)
-		replyUserInfo, _ := gplus.SelectOne(queryReplyUser)
-		commentsWithImages = append(commentsWithImages,
-			CommentContent{
+		queryReplyUser.In(&m.UID, replyUserIds)
+		replyUserInfos, _ := gplus.SelectList(queryReplyUser)
+
+		for _, replyUserInfo := range replyUserInfos {
+			replyUserInfoMap[*replyUserInfo.UID] = *replyUserInfo
+		}
+	}
+
+	replyChannel := make(chan CommentContent, len(page.Records)) // 使用通道传递回复内容
+	imagesBase64S := make([][]string, len(page.Records))         // 存储每条回复的图片
+
+	for index, reply := range page.Records {
+		wg.Add(1)
+		go func(reply model.ScaCommentReply, index int) {
+			defer wg.Done()
+
+			// 使用 context 设置超时时间
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second) // 设置超时，2秒
+			defer cancel()
+
+			// 获取回复图片并处理
+			replyImages := CommentImages{}
+			wrong := global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").FindOne(ctx, bson.M{"comment_id": reply.Id}).Decode(&replyImages)
+			if wrong != nil && !errors.Is(wrong, mongo.ErrNoDocuments) {
+				global.LOG.Errorf("Failed to get images for reply ID %s: %v", reply.Id, wrong)
+				return
+			}
+
+			// 将图片转换为base64
+			var imagesBase64 []string
+			for _, img := range replyImages.Images {
+				mimeType := getMimeType(img)
+				base64Img := base64.StdEncoding.EncodeToString(img)
+				base64WithPrefix := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Img)
+				imagesBase64 = append(imagesBase64, base64WithPrefix)
+			}
+			imagesBase64S[index] = imagesBase64 // 保存到切片中
+
+			userInfo := userInfoMap[reply.UserId]
+			replyUserInfo := replyUserInfoMap[reply.ReplyUser]
+			commentContent := CommentContent{
 				Avatar:          *userInfo.Avatar,
 				NickName:        *userInfo.Nickname,
-				Id:              comment.Id,
-				UserId:          comment.UserId,
-				TopicId:         comment.TopicId,
-				Dislikes:        comment.Dislikes,
-				Content:         comment.Content,
+				Id:              reply.Id,
+				UserId:          reply.UserId,
+				TopicId:         reply.TopicId,
+				Dislikes:        reply.Dislikes,
+				Content:         reply.Content,
 				ReplyUsername:   *replyUserInfo.Nickname,
-				ReplyCount:      comment.ReplyCount,
-				Likes:           comment.Likes,
-				CreatedTime:     comment.CreatedTime,
-				ReplyUser:       comment.ReplyUser,
-				ReplyId:         comment.ReplyId,
-				ReplyTo:         comment.ReplyTo,
-				Author:          comment.Author,
-				Location:        comment.Location,
-				Browser:         comment.Browser,
-				OperatingSystem: comment.OperatingSystem,
+				ReplyCount:      reply.ReplyCount,
+				Likes:           reply.Likes,
+				CreatedTime:     reply.CreatedTime,
+				ReplyUser:       reply.ReplyUser,
+				ReplyId:         reply.ReplyId,
+				ReplyTo:         reply.ReplyTo,
+				Author:          reply.Author,
+				Location:        reply.Location,
+				Browser:         reply.Browser,
+				OperatingSystem: reply.OperatingSystem,
 				Images:          imagesBase64,
-			})
+			}
+			replyChannel <- commentContent // 发送到通道
+		}(*reply, index)
 	}
+
+	go func() {
+		wg.Wait()
+		close(replyChannel) // 关闭通道
+	}()
+
+	var repliesWithImages []CommentContent
+	for replyContent := range replyChannel {
+		repliesWithImages = append(repliesWithImages, replyContent) // 从通道获取回复内容
+	}
+
 	response := CommentResponse{
-		Comments: commentsWithImages,
+		Comments: repliesWithImages,
 		Size:     page.Size,
 		Current:  page.Current,
 		Total:    page.Total,
 	}
 	result.OkWithData(response, c)
 	return
+}
+
+// CommentLikes 点赞评论
+func (CommentAPI) CommentLikes(c *gin.Context) {
+	likeRequest := dto.CommentLikeRequest{}
+	err := c.ShouldBindJSON(&likeRequest)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		return
+	}
+}
+
+func (CommentAPI) CommentDislikes(c *gin.Context) {
+
 }
