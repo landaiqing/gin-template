@@ -14,6 +14,7 @@ import (
 type CommentAPI struct{}
 
 var wg sync.WaitGroup
+var mx sync.Mutex
 var commentReplyService = service.Service.CommentReplyService
 
 // CommentImages 评论图片
@@ -42,10 +43,10 @@ type CommentContent struct {
 	Likes           int64     `json:"likes"`
 	ReplyCount      int64     `json:"reply_count"`
 	CreatedTime     time.Time `json:"created_time"`
-	Dislikes        int64     `json:"dislikes"`
 	Location        string    `json:"location"`
 	Browser         string    `json:"browser"`
 	OperatingSystem string    `json:"operating_system"`
+	IsLiked         bool      `json:"is_liked" default:"false"`
 	Images          []string  `json:"images,omitempty"`
 }
 

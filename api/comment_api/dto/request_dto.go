@@ -25,15 +25,17 @@ type ReplyReplyRequest struct {
 	ReplyTo   int64    `json:"reply_to" binding:"required"`
 	ReplyId   int64    `json:"reply_id" binding:"required"`
 	ReplyUser string   `json:"reply_user" binding:"required"`
-	Author    string   `json:"author" binding:"required""`
+	Author    string   `json:"author" binding:"required"`
 }
 
 type CommentListRequest struct {
+	UserID  string `json:"user_id" binding:"required"`
 	TopicId string `json:"topic_id" binding:"required"`
 	Page    int    `json:"page" default:"1"`
 	Size    int    `json:"size" default:"5"`
 }
 type ReplyListRequest struct {
+	UserID    string `json:"user_id" binding:"required"`
 	TopicId   string `json:"topic_id" binding:"required"`
 	CommentId int64  `json:"comment_id" binding:"required"`
 	Page      int    `json:"page" default:"1"`
@@ -43,5 +45,4 @@ type CommentLikeRequest struct {
 	TopicId   string `json:"topic_id" binding:"required"`
 	CommentId int64  `json:"comment_id" binding:"required"`
 	UserID    string `json:"user_id" binding:"required"`
-	Type      int    `json:"type" binding:"required"`
 }

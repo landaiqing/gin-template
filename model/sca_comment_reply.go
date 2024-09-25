@@ -26,7 +26,6 @@ type ScaCommentReply struct {
 	Deleted         int       `gorm:"column:deleted;type:int(11);default:0;comment:是否删除 0未删除 1 已删除" json:"-"`
 	CreatedBy       string    `gorm:"column:created_by;type:varchar(32);comment:创建人" json:"-"`
 	UpdateBy        string    `gorm:"column:update_by;type:varchar(32);comment:更新人" json:"-"`
-	Dislikes        int64     `gorm:"column:dislikes;type:bigint(20);default:0;comment:踩数" json:"dislikes"`
 	CommentIp       string    `gorm:"column:comment_ip;type:varchar(20);comment:评论ip" json:"-"`
 	Location        string    `gorm:"column:location;type:varchar(20);comment:评论地址" json:"location"`
 	Browser         string    `gorm:"column:browser;type:varchar(20);comment:评论浏览器" json:"browser"`
