@@ -16,6 +16,7 @@ import (
 
 func InitCaptcha() {
 	initRotateCaptcha()
+	initsSlideCaptcha()
 }
 
 // initTextCaptcha 初始化点选验证码

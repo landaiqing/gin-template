@@ -52,10 +52,11 @@ func InitRouter() *gin.Engine {
 		middleware.CasbinMiddleware(),
 	)
 	{
-		modules.UserRouterAuth(authGroup)   // 注册鉴权路由
-		modules.RoleRouter(authGroup)       // 注册角色路由
-		modules.PermissionRouter(authGroup) // 注册权限路由
-		modules.CommentRouter(authGroup)    // 注册评论路由
+		modules.UserRouterAuth(authGroup)    // 注册鉴权路由
+		modules.RoleRouter(authGroup)        // 注册角色路由
+		modules.PermissionRouter(authGroup)  // 注册权限路由
+		modules.CommentRouter(authGroup)     // 注册评论路由
+		modules.CaptchaRouterAuth(authGroup) // 注册验证码路由
 	}
 
 	return router

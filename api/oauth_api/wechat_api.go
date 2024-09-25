@@ -1,6 +1,7 @@
 package oauth_api
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"github.com/ArtisanCloud/PowerLibs/v3/http/helper"
@@ -47,7 +48,7 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 					return "error"
 				}
 				key := strings.TrimPrefix(msg.EventKey, "qrscene_")
-				res := wechatLoginHandler(msg.FromUserName, key)
+				res := wechatLoginHandler(msg.FromUserName, key, c)
 				if !res {
 					return messages.NewText(ginI18n.MustGetMessage(c, "LoginFailed"))
 				}
@@ -69,7 +70,7 @@ func (OAuthAPI) CallbackNotify(c *gin.Context) {
 					println(err.Error())
 					return "error"
 				}
-				res := wechatLoginHandler(msg.FromUserName, msg.EventKey)
+				res := wechatLoginHandler(msg.FromUserName, msg.EventKey, c)
 				if !res {
 					return messages.NewText(ginI18n.MustGetMessage(c, "LoginFailed"))
 				}
@@ -165,7 +166,7 @@ func (OAuthAPI) GetTempQrCode(c *gin.Context) {
 }
 
 // wechatLoginHandler 微信登录处理
-func wechatLoginHandler(openId string, clientId string) bool {
+func wechatLoginHandler(openId string, clientId string, c *gin.Context) bool {
 	if openId == "" {
 		return false
 	}
@@ -257,7 +258,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 		// 异步处理用户登录
 		resChan := make(chan bool, 1)
 		go func() {
-			res := handelUserLogin(*addUser.UID, clientId)
+			res := handelUserLogin(*addUser.UID, clientId, c)
 			resChan <- res
 		}()
 
@@ -271,7 +272,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 		tx.Commit()
 		return true
 	} else {
-		res := handelUserLogin(*authUserSocial.UserID, clientId)
+		res := handelUserLogin(*authUserSocial.UserID, clientId, c)
 		if !res {
 			return false
 		}
@@ -280,7 +281,7 @@ func wechatLoginHandler(openId string, clientId string) bool {
 }
 
 // handelUserLogin 处理用户登录
-func handelUserLogin(userId string, clientId string) bool {
+func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 	resultChan := make(chan bool, 1)
 
 	go func() {
@@ -309,6 +310,12 @@ func handelUserLogin(userId string, clientId string) bool {
 		}
 		tokenData, err := json.Marshal(responseData)
 		if err != nil {
+			resultChan <- false
+			return
+		}
+		gob.Register(dto.ResponseData{})
+		wrong := utils.SetSession(c, "user", data)
+		if wrong != nil {
 			resultChan <- false
 			return
 		}

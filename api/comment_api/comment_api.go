@@ -30,9 +30,15 @@ import (
 func (CommentAPI) CommentSubmit(c *gin.Context) {
 	commentRequest := dto.CommentRequest{}
 	if err := c.ShouldBindJSON(&commentRequest); err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
+	// 验证校验
+	res := utils.CheckSlideData(commentRequest.Point, commentRequest.Key)
+	if !res {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
+
 	if len(commentRequest.Images) > 3 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "TooManyImages"), c)
 		return
@@ -148,7 +154,12 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-
+	// 验证校验
+	res := utils.CheckSlideData(replyCommentRequest.Point, replyCommentRequest.Key)
+	if !res {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
 	if len(replyCommentRequest.Images) > 3 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "TooManyImages"), c)
 		return
@@ -270,7 +281,12 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-
+	// 验证校验
+	res := utils.CheckSlideData(replyReplyRequest.Point, replyReplyRequest.Key)
+	if !res {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
 	if len(replyReplyRequest.Images) > 3 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "TooManyImages"), c)
 		return
@@ -394,7 +410,12 @@ func (CommentAPI) CommentList(c *gin.Context) {
 	// 查询评论列表
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](commentListRequest.Page, commentListRequest.Size)
-	query.Eq(&u.TopicId, commentListRequest.TopicId).Eq(&u.CommentType, enum.COMMENT).OrderByDesc(&u.CommentOrder).OrderByDesc(&u.Likes).OrderByDesc(&u.ReplyCount).OrderByDesc(&u.CreatedTime)
+	if commentListRequest.IsHot {
+		query.OrderByDesc(&u.CommentOrder).OrderByDesc(&u.Likes).OrderByDesc(&u.ReplyCount)
+	} else {
+		query.OrderByDesc(&u.CommentOrder).OrderByDesc(&u.CreatedTime)
+	}
+	query.Eq(&u.TopicId, commentListRequest.TopicId).Eq(&u.CommentType, enum.COMMENT)
 	page, pageDB := gplus.SelectPage(page, query)
 	if pageDB.Error != nil {
 		global.LOG.Errorln(pageDB.Error)
@@ -455,7 +476,7 @@ func (CommentAPI) CommentList(c *gin.Context) {
 	// 查询评论图片信息
 	go func() {
 		defer wg.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second) // 设置超时，2秒
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 设置超时，2秒
 		defer cancel()
 
 		cursor, err := global.MongoDB.Database(global.CONFIG.MongoDB.DB).Collection("comment_images").Find(ctx, bson.M{"comment_id": bson.M{"$in": commentIds}})
@@ -563,7 +584,7 @@ func (CommentAPI) ReplyList(c *gin.Context) {
 	}
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](replyListRequest.Page, replyListRequest.Size)
-	query.Eq(&u.TopicId, replyListRequest.TopicId).Eq(&u.ReplyId, replyListRequest.CommentId).Eq(&u.CommentType, enum.REPLY).OrderByDesc(&u.CommentOrder).OrderByDesc(&u.Likes).OrderByDesc(&u.CreatedTime)
+	query.Eq(&u.TopicId, replyListRequest.TopicId).Eq(&u.ReplyId, replyListRequest.CommentId).Eq(&u.CommentType, enum.REPLY).OrderByDesc(&u.Likes).OrderByAsc(&u.CreatedTime)
 	page, pageDB := gplus.SelectPage(page, query)
 	if pageDB.Error != nil {
 		global.LOG.Errorln(pageDB.Error)

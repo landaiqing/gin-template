@@ -1,20 +1,25 @@
 package utils
 
 import (
-	"encoding/gob"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/global"
 )
 
+// SetSession sets session data with key and data
 func SetSession(c *gin.Context, key string, data interface{}) error {
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {
 		global.LOG.Error("SetSession failed: ", err)
 		return err
 	}
-	gob.Register(data)
-	session.Values[key] = data
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		global.LOG.Error("SetSession failed: ", err)
+		return err
+	}
+	session.Values[key] = jsonData
 	err = session.Save(c.Request, c.Writer)
 	if err != nil {
 		global.LOG.Error("SetSession failed: ", err)
@@ -23,26 +28,28 @@ func SetSession(c *gin.Context, key string, data interface{}) error {
 	return nil
 }
 
-func GetSession(c *gin.Context, key string) interface{} {
+// GetSession gets session data with key
+func GetSession(c *gin.Context, key string) dto.ResponseData {
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return nil
+		return dto.ResponseData{}
 	}
 	jsonData, ok := session.Values[key]
 	if !ok {
 		global.LOG.Error("GetSession failed: ", "key not found")
-		return nil
+		return dto.ResponseData{}
 	}
-	var data interface{}
+	var data dto.ResponseData
 	err = json.Unmarshal(jsonData.([]byte), &data)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return nil
+		return dto.ResponseData{}
 	}
 	return data
 }
 
+// DelSession deletes session data with key
 func DelSession(c *gin.Context, key string) {
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {

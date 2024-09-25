@@ -11,6 +11,7 @@ import (
 	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
+	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/service"
@@ -39,10 +40,11 @@ var script = `
         `
 
 func HandleLoginResponse(c *gin.Context, uid string) {
-	res, data := HandelUserLogin(uid)
+	res, data := HandelUserLogin(uid, c)
 	if !res {
 		return
 	}
+
 	tokenData, err := json.Marshal(data)
 	if err != nil {
 		global.LOG.Error(err)
@@ -55,7 +57,7 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 }
 
 // HandelUserLogin 处理用户登录
-func HandelUserLogin(userId string) (bool, map[string]interface{}) {
+func HandelUserLogin(userId string, c *gin.Context) (bool, result.Response) {
 	// 使用goroutine生成accessToken
 	accessTokenChan := make(chan string)
 	errChan := make(chan error)
@@ -86,7 +88,7 @@ func HandelUserLogin(userId string) (bool, map[string]interface{}) {
 	case accessToken = <-accessTokenChan:
 	case err = <-errChan:
 		global.LOG.Error(err)
-		return false, nil
+		return false, result.Response{}
 	}
 	select {
 	case refreshToken = <-refreshTokenChan:
@@ -99,7 +101,10 @@ func HandelUserLogin(userId string) (bool, map[string]interface{}) {
 		ExpiresAt:    expiresAt,
 		UID:          &userId,
 	}
-
+	wrong := utils.SetSession(c, "user", data)
+	if wrong != nil {
+		return false, result.Response{}
+	}
 	// 使用goroutine将数据存入redis
 	redisErrChan := make(chan error)
 	go func() {
@@ -115,13 +120,13 @@ func HandelUserLogin(userId string) (bool, map[string]interface{}) {
 	redisErr := <-redisErrChan
 	if redisErr != nil {
 		global.LOG.Error(redisErr)
-		return false, nil
+		return false, result.Response{}
 	}
-	responseData := map[string]interface{}{
-		"code":    0,
-		"message": "success",
-		"data":    data,
-		"success": true,
+	responseData := result.Response{
+		Data:    data,
+		Message: "success",
+		Code:    200,
+		Success: true,
 	}
 	return true, responseData
 }

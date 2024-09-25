@@ -1,6 +1,7 @@
 package user_api
 
 import (
+	"encoding/gob"
 	"errors"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
@@ -332,6 +333,7 @@ func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 		return
 	}
+	gob.Register(dto.ResponseData{})
 	err = utils.SetSession(c, "user", data)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)

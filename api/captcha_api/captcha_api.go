@@ -239,12 +239,12 @@ func (CaptchaAPI) GenerateClickShapeCaptcha(c *gin.Context) {
 	result.OkWithData(bt, c)
 }
 
-// GenerateSlideBasicCaptData 生成点击形状基础验证码
-// @Summary 生成点击形状基础验证码
-// @Description 生成点击形状基础验证码
-// @Tags 点击形状验证码
+// GenerateSlideBasicCaptData 滑块基础验证码
+// @Summary 滑块基础验证码
+// @Description 滑块基础验证码
+// @Tags 滑块基础验证码
 // @Success 200 {string} json
-// @Router /api/captcha/shape/check [get]
+// @Router /api/captcha/slide/generate [get]
 func (CaptchaAPI) GenerateSlideBasicCaptData(c *gin.Context) {
 	captData, err := global.SlideCaptcha.Generate()
 	if err != nil {
@@ -266,70 +266,27 @@ func (CaptchaAPI) GenerateSlideBasicCaptData(c *gin.Context) {
 		return
 	}
 	key := helper.StringToMD5(string(dotsByte))
-	err = redis.Set(key, dotsByte, time.Minute).Err()
+	err = redis.Set(constant.CommentSubmitCaptchaRedisKey+key, dotsByte, time.Minute).Err()
 	if err != nil {
 		result.FailWithNull(c)
 		return
 	}
 	bt := map[string]interface{}{
-		"key":         key,
-		"image":       masterImageBase64,
-		"tile":        tileImageBase64,
-		"tile_width":  blockData.Width,
-		"tile_height": blockData.Height,
-		"tile_x":      blockData.TileX,
-		"tile_y":      blockData.TileY,
+		"key":          key,
+		"image":        masterImageBase64,
+		"thumb":        tileImageBase64,
+		"thumb_width":  blockData.Width,
+		"thumb_height": blockData.Height,
+		"thumb_x":      blockData.TileX,
+		"thumb_y":      blockData.TileY,
 	}
 	result.OkWithData(bt, c)
 }
 
-// CheckSlideData 验证点击形状验证码
-// @Summary 验证点击形状验证码
-// @Description 验证点击形状验证码
-// @Tags 点击形状验证码
-// @Param point query string true "点击坐标"
-// @Param key query string true "验证码key"
-// @Success 200 {string} json
-// @Router /api/captcha/shape/slide/check [get]
-func (CaptchaAPI) CheckSlideData(c *gin.Context) {
-	point := c.Query("point")
-	key := c.Query("key")
-	if point == "" || key == "" {
-		result.FailWithNull(c)
-		return
-	}
-
-	cacheDataByte, err := redis.Get(key).Bytes()
-	if len(cacheDataByte) == 0 || err != nil {
-		result.FailWithNull(c)
-		return
-	}
-	src := strings.Split(point, ",")
-
-	var dct *slide.Block
-	if err := json.Unmarshal(cacheDataByte, &dct); err != nil {
-		result.FailWithNull(c)
-		return
-	}
-
-	chkRet := false
-	if 2 == len(src) {
-		sx, _ := strconv.ParseFloat(fmt.Sprintf("%v", src[0]), 64)
-		sy, _ := strconv.ParseFloat(fmt.Sprintf("%v", src[1]), 64)
-		chkRet = slide.CheckPoint(int64(sx), int64(sy), int64(dct.X), int64(dct.Y), 4)
-	}
-
-	if chkRet {
-		result.OkWithMessage("success", c)
-		return
-	}
-	result.FailWithMessage("fail", c)
-}
-
-// GenerateSlideRegionCaptData 生成点击形状验证码
-// @Summary 生成点击形状验证码
-// @Description 生成点击形状验证码
-// @Tags 点击形状验证码
+// GenerateSlideRegionCaptData 生成滑动区域形状验证码
+// @Summary 生成滑动区域形状验证码
+// @Description 生成滑动区域形状验证码
+// @Tags 生成滑动区域形状验证码
 // @Success 200 {string} json
 // @Router /api/captcha/shape/slide/region/get [get]
 func (CaptchaAPI) GenerateSlideRegionCaptData(c *gin.Context) {
@@ -370,4 +327,47 @@ func (CaptchaAPI) GenerateSlideRegionCaptData(c *gin.Context) {
 		"tile_y":      blockData.TileY,
 	}
 	result.OkWithData(bt, c)
+}
+
+// CheckSlideData 验证滑动验证码
+// @Summary 验证滑动验证码
+// @Description 验证滑动验证码
+// @Tags 验证滑动验证码
+// @Param point query string true "点击坐标"
+// @Param key query string true "验证码key"
+// @Success 200 {string} json
+// @Router /api/captcha/shape/slide/check [get]
+func (CaptchaAPI) CheckSlideData(c *gin.Context) {
+	point := c.Query("point")
+	key := c.Query("key")
+	if point == "" || key == "" {
+		result.FailWithNull(c)
+		return
+	}
+
+	cacheDataByte, err := redis.Get(key).Bytes()
+	if len(cacheDataByte) == 0 || err != nil {
+		result.FailWithNull(c)
+		return
+	}
+	src := strings.Split(point, ",")
+
+	var dct *slide.Block
+	if err := json.Unmarshal(cacheDataByte, &dct); err != nil {
+		result.FailWithNull(c)
+		return
+	}
+
+	chkRet := false
+	if 2 == len(src) {
+		sx, _ := strconv.ParseFloat(fmt.Sprintf("%v", src[0]), 64)
+		sy, _ := strconv.ParseFloat(fmt.Sprintf("%v", src[1]), 64)
+		chkRet = slide.CheckPoint(int64(sx), int64(sy), int64(dct.X), int64(dct.Y), 4)
+	}
+
+	if chkRet {
+		result.OkWithMessage("success", c)
+		return
+	}
+	result.FailWithMessage("fail", c)
 }
