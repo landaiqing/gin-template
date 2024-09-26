@@ -763,35 +763,13 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	mx.Lock()
-	defer mx.Unlock()
-	likes := model.ScaCommentLikes{
+
+	// 将点赞请求发送到 channel 中
+	likeChannel <- dto.CommentLikeRequest{
 		CommentId: likeRequest.CommentId,
-		UserId:    likeRequest.UserID,
+		UserID:    likeRequest.UserID,
 		TopicId:   likeRequest.TopicId,
 	}
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-	res := gplus.Insert(&likes)
-	if res.Error != nil {
-		tx.Rollback()
-		global.LOG.Errorln(res.Error)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentLikeFailed"), c)
-		return
-	}
-	// 更新点赞计数
-	if err = commentReplyService.UpdateCommentLikesCount(likeRequest.CommentId, likeRequest.TopicId); err != nil {
-		tx.Rollback()
-		global.LOG.Errorln(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentLikeFailed"), c)
-		return
-	}
-	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentLikeSuccess"), c)
 	return
 }
@@ -806,36 +784,16 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 // @Router /auth/comment/cancel_like [post]
 func (CommentAPI) CancelCommentLikes(c *gin.Context) {
 	likeRequest := dto.CommentLikeRequest{}
-	err := c.ShouldBindJSON(&likeRequest)
-	if err != nil {
+	if err := c.ShouldBindJSON(&likeRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	mx.Lock()
-	defer mx.Unlock()
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-	query, u := gplus.NewQuery[model.ScaCommentLikes]()
-	query.Eq(&u.CommentId, likeRequest.CommentId).Eq(&u.UserId, likeRequest.UserID).Eq(&u.TopicId, likeRequest.TopicId)
-	res := gplus.Delete[model.ScaCommentLikes](query)
-	if res.Error != nil {
-		tx.Rollback()
-		global.LOG.Errorln(res.Error)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentLikeCancelFailed"), c)
-		return
+	// 将取消点赞请求发送到 channel
+	cancelLikeChannel <- dto.CommentLikeRequest{
+		CommentId: likeRequest.CommentId,
+		UserID:    likeRequest.UserID,
+		TopicId:   likeRequest.TopicId,
 	}
-	err = commentReplyService.DecrementCommentLikesCount(likeRequest.CommentId, likeRequest.TopicId)
-	if err != nil {
-		tx.Rollback()
-		global.LOG.Errorln(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentLikeCancelFailed"), c)
-		return
-	}
-	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentLikeCancelSuccess"), c)
 	return
 }

@@ -12,5 +12,6 @@ const (
 
 // 登录之后
 const (
-	CommentSubmitCaptchaRedisKey = "comment:submit:captcha:"
+	CommentSubmitCaptchaRedisKey  = "comment:submit:captcha:"
+	CommentOfflineMessageRedisKey = "comment:offline:message:"
 )

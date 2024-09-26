@@ -3,8 +3,12 @@ package comment_api
 import (
 	"encoding/base64"
 	"errors"
+	"github.com/acmestack/gorm-plus/gplus"
 	"io"
 	"regexp"
+	"schisandra-cloud-album/api/comment_api/dto"
+	"schisandra-cloud-album/global"
+	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/service"
 	"strings"
 	"sync"
@@ -134,4 +138,89 @@ func getMimeType(data []byte) string {
 	}
 
 	return "application/octet-stream" // 默认类型
+}
+
+// 点赞
+var likeChannel = make(chan dto.CommentLikeRequest, 100)
+var cancelLikeChannel = make(chan dto.CommentLikeRequest, 100) // 取消点赞
+
+func init() {
+	go likeConsumer()       // 启动消费者
+	go cancelLikeConsumer() // 启动消费者
+}
+func likeConsumer() {
+	for likeRequest := range likeChannel {
+		processLike(likeRequest) // 处理点赞
+	}
+}
+func cancelLikeConsumer() {
+	for cancelLikeRequest := range cancelLikeChannel {
+		processCancelLike(cancelLikeRequest) // 处理取消点赞
+	}
+}
+
+func processLike(likeRequest dto.CommentLikeRequest) {
+	mx.Lock()
+	defer mx.Unlock()
+
+	likes := model.ScaCommentLikes{
+		CommentId: likeRequest.CommentId,
+		UserId:    likeRequest.UserID,
+		TopicId:   likeRequest.TopicId,
+	}
+
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	res := global.DB.Create(&likes) // 假设这是插入数据库的方法
+	if res.Error != nil {
+		tx.Rollback()
+		global.LOG.Errorln(res.Error)
+		return
+	}
+
+	// 异步更新点赞计数
+	go func() {
+		if err := commentReplyService.UpdateCommentLikesCount(likeRequest.CommentId, likeRequest.TopicId); err != nil {
+			global.LOG.Errorln(err)
+		}
+	}()
+
+	tx.Commit()
+}
+func processCancelLike(cancelLikeRequest dto.CommentLikeRequest) {
+	mx.Lock()
+	defer mx.Unlock()
+
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query, u := gplus.NewQuery[model.ScaCommentLikes]()
+	query.Eq(&u.CommentId, cancelLikeRequest.CommentId).
+		Eq(&u.UserId, cancelLikeRequest.UserID).
+		Eq(&u.TopicId, cancelLikeRequest.TopicId)
+
+	res := gplus.Delete[model.ScaCommentLikes](query)
+	if res.Error != nil {
+		tx.Rollback()
+		return // 返回错误而非打印
+	}
+
+	// 异步更新点赞计数
+	go func() {
+		if err := commentReplyService.DecrementCommentLikesCount(cancelLikeRequest.CommentId, cancelLikeRequest.TopicId); err != nil {
+			global.LOG.Errorln(err)
+		}
+	}()
+
+	tx.Commit()
+	return
 }

@@ -394,3 +394,16 @@ func ZRem(key string, members ...interface{}) *redis.IntCmd {
 func ZRemRangeByRank(key string, start, stop int64) *redis.IntCmd {
 	return global.REDIS.ZRemRangeByRank(ctx, key, start, stop)
 }
+
+// Publish 发布消息到redis
+// channel是发布的目标信道
+// payload是要发布的消息内容
+func Publish(channel string, payload interface{}) *redis.IntCmd {
+	return global.REDIS.Publish(ctx, channel, payload)
+}
+
+// Subscribe 订阅redis消息
+// channels是要订阅的信道列表
+func Subscribe(channels ...string) *redis.PubSub {
+	return global.REDIS.Subscribe(ctx, channels...)
+}
