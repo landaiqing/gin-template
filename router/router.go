@@ -50,6 +50,7 @@ func InitRouter() *gin.Engine {
 		middleware.SecurityHeaders(),
 		middleware.JWTAuthMiddleware(),
 		middleware.CasbinMiddleware(),
+		middleware.VerifySignature(),
 	)
 	{
 		modules.UserRouterAuth(authGroup)    // 注册鉴权路由

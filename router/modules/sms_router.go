@@ -9,7 +9,7 @@ var smsApi = api.Api.SmsApi
 
 func SmsRouter(router *gin.RouterGroup) {
 	group := router.Group("/sms")
-	group.GET("/ali/send", smsApi.SendMessageByAli)
-	group.GET("/smsbao/send", smsApi.SendMessageBySmsBao)
-	group.GET("/test/send", smsApi.SendMessageTest)
+	group.POST("/ali/send", smsApi.SendMessageByAli)
+	group.POST("/smsbao/send", smsApi.SendMessageBySmsBao)
+	group.POST("/test/send", smsApi.SendMessageTest)
 }

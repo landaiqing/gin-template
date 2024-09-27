@@ -38,8 +38,8 @@ func CheckSlideData(point []int64, key string) bool {
 }
 
 // CheckRotateData 校验旋转验证码
-func CheckRotateData(angle string, key string) bool {
-	if angle == "" || key == "" {
+func CheckRotateData(angle int64, key string) bool {
+	if angle == 0 || key == "" {
 		return false
 	}
 	cacheDataByte, err := redis.Get(constant.UserLoginCaptchaRedisKey + key).Bytes()

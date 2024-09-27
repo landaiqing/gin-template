@@ -117,6 +117,11 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
+	rotateData := utils.CheckRotateData(accountLoginRequest.Angle, accountLoginRequest.Key)
+	if !rotateData {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
 	account := accountLoginRequest.Account
 	password := accountLoginRequest.Password
 

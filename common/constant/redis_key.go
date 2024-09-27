@@ -1,7 +1,7 @@
 package constant
 
+// 登录相关的redis key
 const (
-	// 登录相关的redis key
 	UserLoginSmsRedisKey     = "user:sms:"
 	UserLoginTokenRedisKey   = "user:token:"
 	UserLoginCaptchaRedisKey = "user:captcha:"
@@ -10,8 +10,14 @@ const (
 	UserSessionRedisKey      = "user:session:"
 )
 
-// 登录之后
+// 评论相关的redis key
 const (
 	CommentSubmitCaptchaRedisKey  = "comment:submit:captcha:"
 	CommentOfflineMessageRedisKey = "comment:offline:message:"
+)
+
+// 系统相关的redis key
+
+const (
+	SystemApiNonceRedisKey = "system:api:nonce:"
 )

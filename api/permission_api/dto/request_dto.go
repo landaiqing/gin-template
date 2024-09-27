@@ -15,3 +15,6 @@ type AddPermissionToRoleRequestDto struct {
 	Permission string `json:"permission"`
 	Method     string `json:"method"`
 }
+type GetPermissionRequest struct {
+	UserId string `json:"user_id" binding:"required"`
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg6/go-sms/gateways"
 	"github.com/pkg6/go-sms/gateways/aliyun"
 	"github.com/pkg6/go-sms/gateways/smsbao"
+	"schisandra-cloud-album/api/sms_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -23,17 +24,23 @@ import (
 // @Param phone query string true "手机号"
 // @Router /api/sms/ali/send [get]
 func (SmsAPI) SendMessageByAli(c *gin.Context) {
-	phone := c.Query("phone")
-	if phone == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
+	smsRequest := dto.SmsRequest{}
+	err := c.ShouldBindJSON(&smsRequest)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
 		return
 	}
-	isPhone := utils.IsPhone(phone)
+	checkRotateData := utils.CheckRotateData(smsRequest.Angle, smsRequest.Key)
+	if !checkRotateData {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
+	isPhone := utils.IsPhone(smsRequest.Phone)
 	if !isPhone {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
 		return
 	}
-	val := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	val := redis.Get(constant.UserLoginSmsRedisKey + smsRequest.Phone).Val()
 	if val != "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaTooOften"), c)
 		return
@@ -46,12 +53,12 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 		},
 	})
 	code := utils.GenValidateCode(6)
-	wrong := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
+	wrong := redis.Set(constant.UserLoginSmsRedisKey+smsRequest.Phone, code, time.Minute).Err()
 	if wrong != nil {
 		global.LOG.Error(wrong)
 		return
 	}
-	_, err := sms.Send(phone, gosms.MapStringAny{
+	_, err = sms.Send(smsRequest.Phone, gosms.MapStringAny{
 		"content":  "您的验证码是：****。请不要把验证码泄露给其他人。",
 		"template": global.CONFIG.SMS.Ali.TemplateID,
 		//"signName": global.CONFIG.SMS.Ali.Signature,
@@ -74,19 +81,25 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 // @Tags 短信验证码
 // @Produce json
 // @Param phone query string true "手机号"
-// @Router /api/sms/smsbao/send [get]
+// @Router /api/sms/smsbao/send [post]
 func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
-	phone := c.Query("phone")
-	if phone == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
+	smsRequest := dto.SmsRequest{}
+	err := c.ShouldBindJSON(&smsRequest)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
 		return
 	}
-	isPhone := utils.IsPhone(phone)
+	checkRotateData := utils.CheckRotateData(smsRequest.Angle, smsRequest.Key)
+	if !checkRotateData {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
+	isPhone := utils.IsPhone(smsRequest.Phone)
 	if !isPhone {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
 		return
 	}
-	val := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	val := redis.Get(constant.UserLoginSmsRedisKey + smsRequest.Phone).Val()
 	if val != "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaTooOften"), c)
 		return
@@ -98,12 +111,12 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 		},
 	})
 	code := utils.GenValidateCode(6)
-	wrong := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
+	wrong := redis.Set(constant.UserLoginSmsRedisKey+smsRequest.Phone, code, time.Minute).Err()
 	if wrong != nil {
 		global.LOG.Error(wrong)
 		return
 	}
-	_, err := sms.Send(phone, gosms.MapStringAny{
+	_, err = sms.Send(smsRequest.Phone, gosms.MapStringAny{
 		"content": "您的验证码是：" + code + "。请不要把验证码泄露给其他人。",
 	}, nil)
 	if err != nil {
@@ -120,20 +133,26 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 // @Tags 短信验证码
 // @Produce json
 // @Param phone query string true "手机号"
-// @Router /api/sms/test/send [get]
+// @Router /api/sms/test/send [post]
 func (SmsAPI) SendMessageTest(c *gin.Context) {
-	phone := c.Query("phone")
-	if phone == "" {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotEmpty"), c)
+	smsRequest := dto.SmsRequest{}
+	err := c.ShouldBindJSON(&smsRequest)
+	if err != nil {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
 		return
 	}
-	isPhone := utils.IsPhone(phone)
+	checkRotateData := utils.CheckRotateData(smsRequest.Angle, smsRequest.Key)
+	if !checkRotateData {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaVerifyError"), c)
+		return
+	}
+	isPhone := utils.IsPhone(smsRequest.Phone)
 	if !isPhone {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneError"), c)
 		return
 	}
 	code := utils.GenValidateCode(6)
-	err := redis.Set(constant.UserLoginSmsRedisKey+phone, code, time.Minute).Err()
+	err = redis.Set(constant.UserLoginSmsRedisKey+smsRequest.Phone, code, time.Minute).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)

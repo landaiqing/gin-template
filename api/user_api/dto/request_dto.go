@@ -19,6 +19,8 @@ type AccountLoginRequest struct {
 	Account   string `json:"account" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 	AutoLogin bool   `json:"auto_login" binding:"required"`
+	Angle     int64  `json:"angle" binding:"required"`
+	Key       string `json:"key" binding:"required"`
 }
 
 // AddUserRequest 新增用户请求
