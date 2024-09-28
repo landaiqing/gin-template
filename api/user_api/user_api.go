@@ -1,15 +1,11 @@
 package user_api
 
 import (
-	"encoding/gob"
-	"errors"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	"github.com/mssola/useragent"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
 	"reflect"
-	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/randomname"
@@ -107,11 +103,11 @@ func (UserAPI) QueryUserByPhone(c *gin.Context) {
 // AccountLogin 账号登录
 // @Summary 账号登录
 // @Tags 用户模块
-// @Param user body dto.AccountLoginRequest true "用户信息"
+// @Param user body AccountLoginRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/login [post]
 func (UserAPI) AccountLogin(c *gin.Context) {
-	accountLoginRequest := dto.AccountLoginRequest{}
+	accountLoginRequest := AccountLoginRequest{}
 	err := c.ShouldBindJSON(&accountLoginRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -152,11 +148,11 @@ func (UserAPI) AccountLogin(c *gin.Context) {
 // PhoneLogin 手机号登录/注册
 // @Summary 手机号登录/注册
 // @Tags 用户模块
-// @Param user body dto.PhoneLoginRequest true "用户信息"
+// @Param user body PhoneLoginRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/phone_login [post]
 func (UserAPI) PhoneLogin(c *gin.Context) {
-	request := dto.PhoneLoginRequest{}
+	request := PhoneLoginRequest{}
 	err := c.ShouldBind(&request)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -265,7 +261,7 @@ func (UserAPI) PhoneLogin(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/token/refresh [post]
 func (UserAPI) RefreshHandler(c *gin.Context) {
-	request := dto.RefreshTokenRequest{}
+	request := RefreshTokenRequest{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
@@ -289,7 +285,7 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
-	data := dto.ResponseData{
+	data := ResponseData{
 		AccessToken:  accessTokenString,
 		RefreshToken: refreshToken,
 		UID:          parseRefreshToken.UserID,
@@ -301,60 +297,14 @@ func (UserAPI) RefreshHandler(c *gin.Context) {
 	result.OkWithData(data, c)
 }
 
-// handelUserLogin 处理用户登录
-func handelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) {
-	// 检查 user.UID 是否为 nil
-	if user.UID == nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
-		return
-	}
-	if !getUserLoginDevice(user, c) {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID})
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-
-	var days time.Duration
-	if autoLogin {
-		days = 7 * 24 * time.Hour
-	} else {
-		days = time.Minute * 30
-	}
-
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID}, days)
-	data := dto.ResponseData{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
-		UID:          user.UID,
-	}
-
-	err = redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, days).Err()
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	gob.Register(dto.ResponseData{})
-	err = utils.SetSession(c, "user", data)
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-		return
-	}
-	result.OkWithData(data, c)
-}
-
 // ResetPassword 重置密码
 // @Summary 重置密码
 // @Tags 用户模块
-// @Param user body dto.ResetPasswordRequest true "用户信息"
+// @Param user body ResetPasswordRequest true "用户信息"
 // @Success 200 {string} json
 // @Router /api/user/reset_password [post]
 func (UserAPI) ResetPassword(c *gin.Context) {
-	var resetPasswordRequest dto.ResetPasswordRequest
+	var resetPasswordRequest ResetPasswordRequest
 	if err := c.ShouldBindJSON(&resetPasswordRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
@@ -430,77 +380,6 @@ func (UserAPI) ResetPassword(c *gin.Context) {
 
 	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordSuccess"), c)
-}
-
-// getUserLoginDevice 获取用户登录设备
-func getUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
-
-	// 检查user.UID是否为空
-	if user.UID == nil {
-		global.LOG.Errorln("user.UID is nil")
-		return false
-	}
-	userAgent := c.GetHeader("User-Agent")
-	if userAgent == "" {
-		global.LOG.Errorln("user-agent is empty")
-		return false
-	}
-	ua := useragent.New(userAgent)
-
-	ip := utils.GetClientIP(c)
-	location, err := global.IP2Location.SearchByStr(ip)
-	if err != nil {
-		global.LOG.Errorln(err)
-		return false
-	}
-	location = utils.RemoveZeroAndAdjust(location)
-
-	isBot := ua.Bot()
-	browser, browserVersion := ua.Browser()
-	os := ua.OS()
-	mobile := ua.Mobile()
-	mozilla := ua.Mozilla()
-	platform := ua.Platform()
-	engine, engineVersion := ua.Engine()
-
-	device := model.ScaAuthUserDevice{
-		UserID:          user.UID,
-		IP:              &ip,
-		Location:        &location,
-		Agent:           userAgent,
-		Browser:         &browser,
-		BrowserVersion:  &browserVersion,
-		OperatingSystem: &os,
-		Mobile:          &mobile,
-		Bot:             &isBot,
-		Mozilla:         &mozilla,
-		Platform:        &platform,
-		EngineName:      &engine,
-		EngineVersion:   &engineVersion,
-	}
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgent(*user.UID, ip, userAgent)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		err = userDeviceService.AddUserDevice(&device)
-		if err != nil {
-			global.LOG.Errorln(err)
-			return false
-		}
-	} else if err != nil {
-		global.LOG.Errorln(err)
-		return false
-	} else {
-		err := userDeviceService.UpdateUserDevice(userDevice.ID, &device)
-		if err != nil {
-			global.LOG.Errorln(err)
-			return false
-		}
-	}
-
-	return true
 }
 
 // Logout 退出登录

@@ -10,7 +10,6 @@ import (
 	"github.com/wenlng/go-captcha/v2/rotate"
 	"github.com/wenlng/go-captcha/v2/slide"
 	"log"
-	"schisandra-cloud-album/api/captcha_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -72,7 +71,7 @@ func (CaptchaAPI) GenerateRotateCaptcha(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /api/captcha/rotate/check [post]
 func (CaptchaAPI) CheckRotateData(c *gin.Context) {
-	var rotateRequest dto.RotateCaptchaRequest
+	var rotateRequest RotateCaptchaRequest
 	if err := c.ShouldBindJSON(&rotateRequest); err != nil {
 		result.FailWithNull(c)
 		return

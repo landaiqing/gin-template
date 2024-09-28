@@ -1,4 +1,4 @@
-package dto
+package user_api
 
 import "encoding/json"
 

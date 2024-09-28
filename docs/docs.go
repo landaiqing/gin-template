@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AddPermissionRequestDto"
+                            "$ref": "#/definitions/permission_api.AddPermissionRequest"
                         }
                     }
                 ],
@@ -62,7 +62,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AddPermissionToRoleRequestDto"
+                            "$ref": "#/definitions/permission_api.AddPermissionToRoleRequest"
                         }
                     }
                 ],
@@ -89,7 +89,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AddRoleToUserRequestDto"
+                            "$ref": "#/definitions/role_api.AddRoleToUserRequest"
                         }
                     }
                 ],
@@ -116,7 +116,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RoleRequestDto"
+                            "$ref": "#/definitions/role_api.RoleRequest"
                         }
                     }
                 ],
@@ -305,23 +305,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/shape/check": {
-            "get": {
-                "description": "生成点击形状基础验证码",
-                "tags": [
-                    "点击形状验证码"
-                ],
-                "summary": "生成点击形状基础验证码",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/api/captcha/shape/get": {
             "get": {
                 "description": "生成点击形状验证码",
@@ -341,11 +324,11 @@ const docTemplate = `{
         },
         "/api/captcha/shape/slide/check": {
             "get": {
-                "description": "验证点击形状验证码",
+                "description": "验证滑动验证码",
                 "tags": [
-                    "点击形状验证码"
+                    "验证滑动验证码"
                 ],
-                "summary": "验证点击形状验证码",
+                "summary": "验证滑动验证码",
                 "parameters": [
                     {
                         "type": "string",
@@ -374,11 +357,28 @@ const docTemplate = `{
         },
         "/api/captcha/shape/slide/region/get": {
             "get": {
-                "description": "生成点击形状验证码",
+                "description": "生成滑动区域形状验证码",
                 "tags": [
-                    "点击形状验证码"
+                    "生成滑动区域形状验证码"
                 ],
-                "summary": "生成点击形状验证码",
+                "summary": "生成滑动区域形状验证码",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/captcha/slide/generate": {
+            "get": {
+                "description": "滑块基础验证码",
+                "tags": [
+                    "滑块基础验证码"
+                ],
+                "summary": "滑块基础验证码",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -446,60 +446,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/comment/reply": {
-            "post": {
-                "description": "提交回复",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "评论"
-                ],
-                "summary": "提交回复",
-                "parameters": [
-                    {
-                        "description": "回复评论请求",
-                        "name": "reply_comment_request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.ReplyCommentRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/comment/submit": {
-            "post": {
-                "description": "提交评论",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "评论"
-                ],
-                "summary": "提交评论",
-                "parameters": [
-                    {
-                        "description": "评论请求",
-                        "name": "comment_request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CommentRequest"
-                        }
-                    }
-                ],
-                "responses": {}
             }
         },
         "/api/oauth/callback_notify": {
@@ -701,7 +647,7 @@ const docTemplate = `{
             }
         },
         "/api/sms/smsbao/send": {
-            "get": {
+            "post": {
                 "description": "短信宝发送短信验证码",
                 "produces": [
                     "application/json"
@@ -723,7 +669,7 @@ const docTemplate = `{
             }
         },
         "/api/sms/test/send": {
-            "get": {
+            "post": {
                 "description": "发送测试短信验证码",
                 "produces": [
                     "application/json"
@@ -782,7 +728,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AccountLoginRequest"
+                            "$ref": "#/definitions/user_api.AccountLoginRequest"
                         }
                     }
                 ],
@@ -809,7 +755,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.PhoneLoginRequest"
+                            "$ref": "#/definitions/user_api.PhoneLoginRequest"
                         }
                     }
                 ],
@@ -836,7 +782,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                            "$ref": "#/definitions/user_api.ResetPasswordRequest"
                         }
                     }
                 ],
@@ -859,62 +805,258 @@ const docTemplate = `{
                 "summary": "创建websocket服务",
                 "responses": {}
             }
+        },
+        "/auth/comment/cancel_like": {
+            "post": {
+                "description": "取消点赞评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "取消点赞评论",
+                "parameters": [
+                    {
+                        "description": "取消点赞请求",
+                        "name": "comment_like_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.CommentLikeRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/comment/like": {
+            "post": {
+                "description": "点赞评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "点赞评论",
+                "parameters": [
+                    {
+                        "description": "点赞请求",
+                        "name": "comment_like_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.CommentLikeRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/comment/list": {
+            "post": {
+                "description": "获取评论列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "获取评论列表",
+                "parameters": [
+                    {
+                        "description": "评论列表请求",
+                        "name": "comment_list_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.CommentListRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/comment/submit": {
+            "post": {
+                "description": "提交评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "提交评论",
+                "parameters": [
+                    {
+                        "description": "评论请求",
+                        "name": "comment_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.CommentRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/reply/list": {
+            "post": {
+                "description": "获取回复列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "获取回复列表",
+                "parameters": [
+                    {
+                        "description": "回复列表请求",
+                        "name": "reply_list_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.ReplyListRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/reply/reply/submit": {
+            "post": {
+                "description": "提交回复的回复",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "提交回复的回复",
+                "parameters": [
+                    {
+                        "description": "回复回复请求",
+                        "name": "reply_reply_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.ReplyReplyRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/reply/submit": {
+            "post": {
+                "description": "提交回复",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "提交回复",
+                "parameters": [
+                    {
+                        "description": "回复评论请求",
+                        "name": "reply_comment_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment_api.ReplyCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
-        "dto.AccountLoginRequest": {
+        "comment_api.CommentLikeRequest": {
             "type": "object",
+            "required": [
+                "comment_id",
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
-                "account": {
+                "comment_id": {
+                    "type": "integer"
+                },
+                "topic_id": {
                     "type": "string"
                 },
-                "auto_login": {
-                    "type": "boolean"
-                },
-                "password": {
+                "user_id": {
                     "type": "string"
                 }
             }
         },
-        "dto.AddPermissionRequestDto": {
+        "comment_api.CommentListRequest": {
             "type": "object",
+            "required": [
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.ScaAuthPermission"
-                    }
-                }
-            }
-        },
-        "dto.AddPermissionToRoleRequestDto": {
-            "type": "object",
-            "properties": {
-                "method": {
+                "is_hot": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "page": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "size": {
+                    "type": "integer",
+                    "default": 5
+                },
+                "topic_id": {
                     "type": "string"
                 },
-                "permission": {
-                    "type": "string"
-                },
-                "role_key": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AddRoleToUserRequestDto": {
-            "type": "object",
-            "properties": {
-                "role_key": {
-                    "type": "string"
-                },
-                "uid": {
+                "user_id": {
                     "type": "string"
                 }
             }
         },
-        "dto.CommentRequest": {
+        "comment_api.CommentRequest": {
             "type": "object",
+            "required": [
+                "author",
+                "content",
+                "key",
+                "point",
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
+                "author": {
+                    "type": "string"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -922,6 +1064,15 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "point": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
                     }
                 },
                 "topic_id": {
@@ -932,23 +1083,22 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PhoneLoginRequest": {
+        "comment_api.ReplyCommentRequest": {
             "type": "object",
+            "required": [
+                "author",
+                "content",
+                "key",
+                "point",
+                "reply_id",
+                "reply_user",
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
-                "auto_login": {
-                    "type": "boolean"
-                },
-                "captcha": {
+                "author": {
                     "type": "string"
                 },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ReplyCommentRequest": {
-            "type": "object",
-            "properties": {
                 "content": {
                     "type": "string"
                 },
@@ -958,8 +1108,17 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "reply_id": {
+                "key": {
                     "type": "string"
+                },
+                "point": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "reply_id": {
+                    "type": "integer"
                 },
                 "reply_user": {
                     "type": "string"
@@ -972,30 +1131,81 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ResetPasswordRequest": {
+        "comment_api.ReplyListRequest": {
             "type": "object",
+            "required": [
+                "comment_id",
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
-                "captcha": {
+                "comment_id": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "size": {
+                    "type": "integer",
+                    "default": 5
+                },
+                "topic_id": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "repassword": {
+                "user_id": {
                     "type": "string"
                 }
             }
         },
-        "dto.RoleRequestDto": {
+        "comment_api.ReplyReplyRequest": {
             "type": "object",
+            "required": [
+                "author",
+                "content",
+                "key",
+                "point",
+                "reply_id",
+                "reply_to",
+                "reply_user",
+                "topic_id",
+                "user_id"
+            ],
             "properties": {
-                "role_key": {
+                "author": {
                     "type": "string"
                 },
-                "role_name": {
+                "content": {
+                    "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "point": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "reply_id": {
+                    "type": "integer"
+                },
+                "reply_to": {
+                    "type": "integer"
+                },
+                "reply_user": {
+                    "type": "string"
+                },
+                "topic_id": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -1064,6 +1274,130 @@ const docTemplate = `{
                 },
                 "update_time": {
                     "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "permission_api.AddPermissionRequest": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ScaAuthPermission"
+                    }
+                }
+            }
+        },
+        "permission_api.AddPermissionToRoleRequest": {
+            "type": "object",
+            "properties": {
+                "method": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
+                },
+                "role_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "role_api.AddRoleToUserRequest": {
+            "type": "object",
+            "required": [
+                "role_key",
+                "uid"
+            ],
+            "properties": {
+                "role_key": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
+        "role_api.RoleRequest": {
+            "type": "object",
+            "required": [
+                "role_key",
+                "role_name"
+            ],
+            "properties": {
+                "role_key": {
+                    "type": "string"
+                },
+                "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "user_api.AccountLoginRequest": {
+            "type": "object",
+            "required": [
+                "account",
+                "angle",
+                "auto_login",
+                "key",
+                "password"
+            ],
+            "properties": {
+                "account": {
+                    "type": "string"
+                },
+                "angle": {
+                    "type": "integer"
+                },
+                "auto_login": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "user_api.PhoneLoginRequest": {
+            "type": "object",
+            "required": [
+                "auto_login",
+                "captcha",
+                "phone"
+            ],
+            "properties": {
+                "auto_login": {
+                    "type": "boolean"
+                },
+                "captcha": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "user_api.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "captcha",
+                "password",
+                "phone",
+                "repassword"
+            ],
+            "properties": {
+                "captcha": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "repassword": {
                     "type": "string"
                 }
             }

@@ -10,7 +10,6 @@ import (
 	"github.com/mssola/useragent"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"schisandra-cloud-album/api/comment_api/dto"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -25,10 +24,10 @@ import (
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param comment_request body dto.CommentRequest true "评论请求"
+// @Param comment_request body CommentRequest true "评论请求"
 // @Router /auth/comment/submit [post]
 func (CommentAPI) CommentSubmit(c *gin.Context) {
-	commentRequest := dto.CommentRequest{}
+	commentRequest := CommentRequest{}
 	if err := c.ShouldBindJSON(&commentRequest); err != nil {
 		return
 	}
@@ -146,10 +145,10 @@ func (CommentAPI) CommentSubmit(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param reply_comment_request body dto.ReplyCommentRequest true "回复评论请求"
+// @Param reply_comment_request body ReplyCommentRequest true "回复评论请求"
 // @Router /auth/reply/submit [post]
 func (CommentAPI) ReplySubmit(c *gin.Context) {
-	replyCommentRequest := dto.ReplyCommentRequest{}
+	replyCommentRequest := ReplyCommentRequest{}
 	if err := c.ShouldBindJSON(&replyCommentRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
@@ -273,10 +272,10 @@ func (CommentAPI) ReplySubmit(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param reply_reply_request body dto.ReplyReplyRequest true "回复回复请求"
+// @Param reply_reply_request body ReplyReplyRequest true "回复回复请求"
 // @Router /auth/reply/reply/submit [post]
 func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
-	replyReplyRequest := dto.ReplyReplyRequest{}
+	replyReplyRequest := ReplyReplyRequest{}
 	if err := c.ShouldBindJSON(&replyReplyRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
@@ -398,10 +397,10 @@ func (CommentAPI) ReplyReplySubmit(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param comment_list_request body dto.CommentListRequest true "评论列表请求"
+// @Param comment_list_request body CommentListRequest true "评论列表请求"
 // @Router /auth/comment/list [post]
 func (CommentAPI) CommentList(c *gin.Context) {
-	commentListRequest := dto.CommentListRequest{}
+	commentListRequest := CommentListRequest{}
 	err := c.ShouldBindJSON(&commentListRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -573,10 +572,10 @@ func (CommentAPI) CommentList(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param reply_list_request body dto.ReplyListRequest true "回复列表请求"
+// @Param reply_list_request body ReplyListRequest true "回复列表请求"
 // @Router /auth/reply/list [post]
 func (CommentAPI) ReplyList(c *gin.Context) {
-	replyListRequest := dto.ReplyListRequest{}
+	replyListRequest := ReplyListRequest{}
 	err := c.ShouldBindJSON(&replyListRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -754,10 +753,10 @@ func (CommentAPI) ReplyList(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param comment_like_request body dto.CommentLikeRequest true "点赞请求"
+// @Param comment_like_request body CommentLikeRequest true "点赞请求"
 // @Router /auth/comment/like [post]
 func (CommentAPI) CommentLikes(c *gin.Context) {
-	likeRequest := dto.CommentLikeRequest{}
+	likeRequest := CommentLikeRequest{}
 	err := c.ShouldBindJSON(&likeRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -765,7 +764,7 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 	}
 
 	// 将点赞请求发送到 channel 中
-	likeChannel <- dto.CommentLikeRequest{
+	likeChannel <- CommentLikeRequest{
 		CommentId: likeRequest.CommentId,
 		UserID:    likeRequest.UserID,
 		TopicId:   likeRequest.TopicId,
@@ -780,16 +779,16 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 // @Tags 评论
 // @Accept  json
 // @Produce  json
-// @Param comment_like_request body dto.CommentLikeRequest true "取消点赞请求"
+// @Param comment_like_request body CommentLikeRequest true "取消点赞请求"
 // @Router /auth/comment/cancel_like [post]
 func (CommentAPI) CancelCommentLikes(c *gin.Context) {
-	likeRequest := dto.CommentLikeRequest{}
+	likeRequest := CommentLikeRequest{}
 	if err := c.ShouldBindJSON(&likeRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
 	// 将取消点赞请求发送到 channel
-	cancelLikeChannel <- dto.CommentLikeRequest{
+	cancelLikeChannel <- CommentLikeRequest{
 		CommentId: likeRequest.CommentId,
 		UserID:    likeRequest.UserID,
 		TopicId:   likeRequest.TopicId,

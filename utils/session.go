@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/global"
 )
 
@@ -29,22 +28,22 @@ func SetSession(c *gin.Context, key string, data interface{}) error {
 }
 
 // GetSession gets session data with key
-func GetSession(c *gin.Context, key string) dto.ResponseData {
+func GetSession(c *gin.Context, key string) interface{} {
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return dto.ResponseData{}
+		return nil
 	}
 	jsonData, ok := session.Values[key]
 	if !ok {
 		global.LOG.Error("GetSession failed: ", "key not found")
-		return dto.ResponseData{}
+		return nil
 	}
-	var data dto.ResponseData
+	var data interface{}
 	err = json.Unmarshal(jsonData.([]byte), &data)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return dto.ResponseData{}
+		return nil
 	}
 	return data
 }

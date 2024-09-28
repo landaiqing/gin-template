@@ -10,7 +10,7 @@ import (
 func I18n() gin.HandlerFunc {
 	return ginI18n.Localize(
 		ginI18n.WithBundle(&ginI18n.BundleCfg{
-			RootPath:         "i18n/language/",
+			RootPath:         "resource/language/",
 			AcceptLanguage:   []language.Tag{language.Chinese, language.English},
 			DefaultLanguage:  language.Chinese,
 			UnmarshalFunc:    toml.Unmarshal,

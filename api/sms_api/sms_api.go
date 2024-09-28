@@ -7,7 +7,6 @@ import (
 	"github.com/pkg6/go-sms/gateways"
 	"github.com/pkg6/go-sms/gateways/aliyun"
 	"github.com/pkg6/go-sms/gateways/smsbao"
-	"schisandra-cloud-album/api/sms_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -24,7 +23,7 @@ import (
 // @Param phone query string true "手机号"
 // @Router /api/sms/ali/send [get]
 func (SmsAPI) SendMessageByAli(c *gin.Context) {
-	smsRequest := dto.SmsRequest{}
+	smsRequest := SmsRequest{}
 	err := c.ShouldBindJSON(&smsRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
@@ -83,7 +82,7 @@ func (SmsAPI) SendMessageByAli(c *gin.Context) {
 // @Param phone query string true "手机号"
 // @Router /api/sms/smsbao/send [post]
 func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
-	smsRequest := dto.SmsRequest{}
+	smsRequest := SmsRequest{}
 	err := c.ShouldBindJSON(&smsRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)
@@ -135,7 +134,7 @@ func (SmsAPI) SendMessageBySmsBao(c *gin.Context) {
 // @Param phone query string true "手机号"
 // @Router /api/sms/test/send [post]
 func (SmsAPI) SendMessageTest(c *gin.Context) {
-	smsRequest := dto.SmsRequest{}
+	smsRequest := SmsRequest{}
 	err := c.ShouldBindJSON(&smsRequest)
 	if err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaSendFailed"), c)

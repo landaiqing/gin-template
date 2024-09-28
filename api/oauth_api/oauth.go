@@ -8,7 +8,6 @@ import (
 	"github.com/mssola/useragent"
 	"gorm.io/gorm"
 	"net/http"
-	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
@@ -95,13 +94,13 @@ func HandelUserLogin(userId string, c *gin.Context) (bool, result.Response) {
 	case expiresAt = <-expiresAtChan:
 	}
 
-	data := dto.ResponseData{
+	data := ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
 		UID:          &userId,
 	}
-	wrong := utils.SetSession(c, "user", data)
+	wrong := utils.SetSession(c, constant.SessionKey, data)
 	if wrong != nil {
 		return false, result.Response{}
 	}

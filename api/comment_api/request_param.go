@@ -1,4 +1,4 @@
-package dto
+package comment_api
 
 type CommentRequest struct {
 	Content string   `json:"content" binding:"required"`

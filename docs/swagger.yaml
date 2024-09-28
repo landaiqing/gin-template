@@ -1,92 +1,153 @@
 definitions:
-  dto.AccountLoginRequest:
+  comment_api.CommentLikeRequest:
     properties:
-      account:
+      comment_id:
+        type: integer
+      topic_id:
         type: string
-      auto_login:
+      user_id:
+        type: string
+    required:
+    - comment_id
+    - topic_id
+    - user_id
+    type: object
+  comment_api.CommentListRequest:
+    properties:
+      is_hot:
+        default: true
         type: boolean
-      password:
+      page:
+        default: 1
+        type: integer
+      size:
+        default: 5
+        type: integer
+      topic_id:
         type: string
+      user_id:
+        type: string
+    required:
+    - topic_id
+    - user_id
     type: object
-  dto.AddPermissionRequestDto:
+  comment_api.CommentRequest:
     properties:
-      permissions:
-        items:
-          $ref: '#/definitions/model.ScaAuthPermission'
-        type: array
-    type: object
-  dto.AddPermissionToRoleRequestDto:
-    properties:
-      method:
+      author:
         type: string
-      permission:
-        type: string
-      role_key:
-        type: string
-    type: object
-  dto.AddRoleToUserRequestDto:
-    properties:
-      role_key:
-        type: string
-      uid:
-        type: string
-    type: object
-  dto.CommentRequest:
-    properties:
       content:
         type: string
       images:
         items:
           type: string
+        type: array
+      key:
+        type: string
+      point:
+        items:
+          type: integer
         type: array
       topic_id:
         type: string
       user_id:
         type: string
+    required:
+    - author
+    - content
+    - key
+    - point
+    - topic_id
+    - user_id
     type: object
-  dto.PhoneLoginRequest:
+  comment_api.ReplyCommentRequest:
     properties:
-      auto_login:
-        type: boolean
-      captcha:
+      author:
         type: string
-      phone:
-        type: string
-    type: object
-  dto.ReplyCommentRequest:
-    properties:
       content:
         type: string
       images:
         items:
           type: string
         type: array
-      reply_id:
+      key:
         type: string
+      point:
+        items:
+          type: integer
+        type: array
+      reply_id:
+        type: integer
       reply_user:
         type: string
       topic_id:
         type: string
       user_id:
         type: string
+    required:
+    - author
+    - content
+    - key
+    - point
+    - reply_id
+    - reply_user
+    - topic_id
+    - user_id
     type: object
-  dto.ResetPasswordRequest:
+  comment_api.ReplyListRequest:
     properties:
-      captcha:
+      comment_id:
+        type: integer
+      page:
+        default: 1
+        type: integer
+      size:
+        default: 5
+        type: integer
+      topic_id:
         type: string
-      password:
+      user_id:
         type: string
-      phone:
-        type: string
-      repassword:
-        type: string
+    required:
+    - comment_id
+    - topic_id
+    - user_id
     type: object
-  dto.RoleRequestDto:
+  comment_api.ReplyReplyRequest:
     properties:
-      role_key:
+      author:
         type: string
-      role_name:
+      content:
         type: string
+      images:
+        items:
+          type: string
+        type: array
+      key:
+        type: string
+      point:
+        items:
+          type: integer
+        type: array
+      reply_id:
+        type: integer
+      reply_to:
+        type: integer
+      reply_user:
+        type: string
+      topic_id:
+        type: string
+      user_id:
+        type: string
+    required:
+    - author
+    - content
+    - key
+    - point
+    - reply_id
+    - reply_to
+    - reply_user
+    - topic_id
+    - user_id
     type: object
   model.ScaAuthPermission:
     properties:
@@ -138,6 +199,90 @@ definitions:
         description: 更新时间
         type: string
     type: object
+  permission_api.AddPermissionRequest:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/model.ScaAuthPermission'
+        type: array
+    type: object
+  permission_api.AddPermissionToRoleRequest:
+    properties:
+      method:
+        type: string
+      permission:
+        type: string
+      role_key:
+        type: string
+    type: object
+  role_api.AddRoleToUserRequest:
+    properties:
+      role_key:
+        type: string
+      uid:
+        type: string
+    required:
+    - role_key
+    - uid
+    type: object
+  role_api.RoleRequest:
+    properties:
+      role_key:
+        type: string
+      role_name:
+        type: string
+    required:
+    - role_key
+    - role_name
+    type: object
+  user_api.AccountLoginRequest:
+    properties:
+      account:
+        type: string
+      angle:
+        type: integer
+      auto_login:
+        type: boolean
+      key:
+        type: string
+      password:
+        type: string
+    required:
+    - account
+    - angle
+    - auto_login
+    - key
+    - password
+    type: object
+  user_api.PhoneLoginRequest:
+    properties:
+      auto_login:
+        type: boolean
+      captcha:
+        type: string
+      phone:
+        type: string
+    required:
+    - auto_login
+    - captcha
+    - phone
+    type: object
+  user_api.ResetPasswordRequest:
+    properties:
+      captcha:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      repassword:
+        type: string
+    required:
+    - captcha
+    - password
+    - phone
+    - repassword
+    type: object
 info:
   contact: {}
 paths:
@@ -152,7 +297,7 @@ paths:
         name: permissions
         required: true
         schema:
-          $ref: '#/definitions/dto.AddPermissionRequestDto'
+          $ref: '#/definitions/permission_api.AddPermissionRequest'
       produces:
       - application/json
       responses: {}
@@ -170,7 +315,7 @@ paths:
         name: permissions
         required: true
         schema:
-          $ref: '#/definitions/dto.AddPermissionToRoleRequestDto'
+          $ref: '#/definitions/permission_api.AddPermissionToRoleRequest'
       produces:
       - application/json
       responses: {}
@@ -188,7 +333,7 @@ paths:
         name: addRoleToUserRequestDto
         required: true
         schema:
-          $ref: '#/definitions/dto.AddRoleToUserRequestDto'
+          $ref: '#/definitions/role_api.AddRoleToUserRequest'
       produces:
       - application/json
       responses: {}
@@ -206,7 +351,7 @@ paths:
         name: roleRequestDto
         required: true
         schema:
-          $ref: '#/definitions/dto.RoleRequestDto'
+          $ref: '#/definitions/role_api.RoleRequest'
       produces:
       - application/json
       responses: {}
@@ -330,17 +475,6 @@ paths:
       summary: 生成旋转验证码
       tags:
       - 旋转验证码
-  /api/captcha/shape/check:
-    get:
-      description: 生成点击形状基础验证码
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: 生成点击形状基础验证码
-      tags:
-      - 点击形状验证码
   /api/captcha/shape/get:
     get:
       description: 生成点击形状验证码
@@ -354,7 +488,7 @@ paths:
       - 点击形状验证码
   /api/captcha/shape/slide/check:
     get:
-      description: 验证点击形状验证码
+      description: 验证滑动验证码
       parameters:
       - description: 点击坐标
         in: query
@@ -371,20 +505,31 @@ paths:
           description: OK
           schema:
             type: string
-      summary: 验证点击形状验证码
+      summary: 验证滑动验证码
       tags:
-      - 点击形状验证码
+      - 验证滑动验证码
   /api/captcha/shape/slide/region/get:
     get:
-      description: 生成点击形状验证码
+      description: 生成滑动区域形状验证码
       responses:
         "200":
           description: OK
           schema:
             type: string
-      summary: 生成点击形状验证码
+      summary: 生成滑动区域形状验证码
       tags:
-      - 点击形状验证码
+      - 生成滑动区域形状验证码
+  /api/captcha/slide/generate:
+    get:
+      description: 滑块基础验证码
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 滑块基础验证码
+      tags:
+      - 滑块基础验证码
   /api/captcha/text/check:
     get:
       description: 验证基础文字验证码
@@ -424,42 +569,6 @@ paths:
       summary: 生成基础文字验证码
       tags:
       - 基础文字验证码
-  /api/comment/reply:
-    post:
-      consumes:
-      - application/json
-      description: 提交回复
-      parameters:
-      - description: 回复评论请求
-        in: body
-        name: reply_comment_request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ReplyCommentRequest'
-      produces:
-      - application/json
-      responses: {}
-      summary: 提交回复
-      tags:
-      - 评论
-  /api/comment/submit:
-    post:
-      consumes:
-      - application/json
-      description: 提交评论
-      parameters:
-      - description: 评论请求
-        in: body
-        name: comment_request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CommentRequest'
-      produces:
-      - application/json
-      responses: {}
-      summary: 提交评论
-      tags:
-      - 评论
   /api/oauth/callback_notify:
     post:
       description: 微信回调
@@ -594,7 +703,7 @@ paths:
       tags:
       - 短信验证码
   /api/sms/smsbao/send:
-    get:
+    post:
       description: 短信宝发送短信验证码
       parameters:
       - description: 手机号
@@ -609,7 +718,7 @@ paths:
       tags:
       - 短信验证码
   /api/sms/test/send:
-    get:
+    post:
       description: 发送测试短信验证码
       parameters:
       - description: 手机号
@@ -647,7 +756,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/dto.AccountLoginRequest'
+          $ref: '#/definitions/user_api.AccountLoginRequest'
       responses:
         "200":
           description: OK
@@ -664,7 +773,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/dto.PhoneLoginRequest'
+          $ref: '#/definitions/user_api.PhoneLoginRequest'
       responses:
         "200":
           description: OK
@@ -681,7 +790,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/dto.ResetPasswordRequest'
+          $ref: '#/definitions/user_api.ResetPasswordRequest'
       responses:
         "200":
           description: OK
@@ -697,4 +806,130 @@ paths:
       summary: 创建websocket服务
       tags:
       - websocket
+  /auth/comment/cancel_like:
+    post:
+      consumes:
+      - application/json
+      description: 取消点赞评论
+      parameters:
+      - description: 取消点赞请求
+        in: body
+        name: comment_like_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.CommentLikeRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 取消点赞评论
+      tags:
+      - 评论
+  /auth/comment/like:
+    post:
+      consumes:
+      - application/json
+      description: 点赞评论
+      parameters:
+      - description: 点赞请求
+        in: body
+        name: comment_like_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.CommentLikeRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 点赞评论
+      tags:
+      - 评论
+  /auth/comment/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取评论列表
+      parameters:
+      - description: 评论列表请求
+        in: body
+        name: comment_list_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.CommentListRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 获取评论列表
+      tags:
+      - 评论
+  /auth/comment/submit:
+    post:
+      consumes:
+      - application/json
+      description: 提交评论
+      parameters:
+      - description: 评论请求
+        in: body
+        name: comment_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.CommentRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 提交评论
+      tags:
+      - 评论
+  /auth/reply/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取回复列表
+      parameters:
+      - description: 回复列表请求
+        in: body
+        name: reply_list_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.ReplyListRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 获取回复列表
+      tags:
+      - 评论
+  /auth/reply/reply/submit:
+    post:
+      consumes:
+      - application/json
+      description: 提交回复的回复
+      parameters:
+      - description: 回复回复请求
+        in: body
+        name: reply_reply_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.ReplyReplyRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 提交回复的回复
+      tags:
+      - 评论
+  /auth/reply/submit:
+    post:
+      consumes:
+      - application/json
+      description: 提交回复
+      parameters:
+      - description: 回复评论请求
+        in: body
+        name: reply_comment_request
+        required: true
+        schema:
+          $ref: '#/definitions/comment_api.ReplyCommentRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: 提交回复
+      tags:
+      - 评论
 swagger: "2.0"

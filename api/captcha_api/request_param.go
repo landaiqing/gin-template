@@ -1,4 +1,4 @@
-package dto
+package captcha_api
 
 type RotateCaptchaRequest struct {
 	Angle int    `json:"angle" binding:"required"`

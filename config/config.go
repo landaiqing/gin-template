@@ -13,4 +13,5 @@ type Config struct {
 	Swagger Swagger `yaml:"swagger"`
 	Casbin  Casbin  `yaml:"casbin"`
 	MongoDB MongoDB `yaml:"mongodb"`
+	NSQ     NSQ     `yaml:"nsq"`
 }

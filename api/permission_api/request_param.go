@@ -1,16 +1,14 @@
-package dto
+package permission_api
 
-import (
-	"schisandra-cloud-album/model"
-)
+import "schisandra-cloud-album/model"
 
-// AddPermissionRequestDto 添加权限请求dto
-type AddPermissionRequestDto struct {
+// AddPermissionToRoleRequest 添加权限请求
+type AddPermissionRequest struct {
 	Permissions []model.ScaAuthPermission `form:"permissions[]" json:"permissions"`
 }
 
-// AddPermissionToRoleRequestDto 添加权限到角色请求dto
-type AddPermissionToRoleRequestDto struct {
+// AddPermissionToRoleRequest 添加权限到角色请求
+type AddPermissionToRoleRequest struct {
 	RoleKey    string `json:"role_key"`
 	Permission string `json:"permission"`
 	Method     string `json:"method"`

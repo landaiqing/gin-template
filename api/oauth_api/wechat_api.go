@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
-	"schisandra-cloud-album/api/user_api/dto"
 	"schisandra-cloud-album/api/websocket_api"
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
@@ -291,7 +290,7 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			return
 		}
 		refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
-		data := dto.ResponseData{
+		data := ResponseData{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 			ExpiresAt:    expiresAt,
@@ -313,8 +312,8 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			resultChan <- false
 			return
 		}
-		gob.Register(dto.ResponseData{})
-		wrong := utils.SetSession(c, "user", data)
+		gob.Register(ResponseData{})
+		wrong := utils.SetSession(c, constant.SessionKey, data)
 		if wrong != nil {
 			resultChan <- false
 			return

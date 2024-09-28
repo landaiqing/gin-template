@@ -1,4 +1,4 @@
-package dto
+package sms_api
 
 type SmsRequest struct {
 	Phone string `json:"phone" binding:"required"`

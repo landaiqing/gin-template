@@ -3,7 +3,6 @@ package permission_api
 import (
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api/permission_api/dto"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/service"
@@ -17,16 +16,16 @@ var permissionService = service.Service.PermissionService
 // @Tags 权限管理
 // @Accept  json
 // @Produce  json
-// @Param permissions body dto.AddPermissionRequestDto true "权限列表"
+// @Param permissions body AddPermissionRequest true "权限列表"
 // @Router /api/auth/permission/add [post]
 func (PermissionAPI) AddPermissions(c *gin.Context) {
-	addPermissionRequestDto := dto.AddPermissionRequestDto{}
-	err := c.ShouldBind(&addPermissionRequestDto.Permissions)
+	addPermissionRequest := AddPermissionRequest{}
+	err := c.ShouldBind(&addPermissionRequest.Permissions)
 	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
-	err = permissionService.CreatePermissions(addPermissionRequestDto.Permissions)
+	err = permissionService.CreatePermissions(addPermissionRequest.Permissions)
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CreatedFailed"), c)
@@ -42,12 +41,12 @@ func (PermissionAPI) AddPermissions(c *gin.Context) {
 // @Tags 权限管理
 // @Accept  json
 // @Produce  json
-// @Param permissions body dto.AddPermissionToRoleRequestDto true "权限列表"
+// @Param permissions body AddPermissionToRoleRequest true "权限列表"
 // @Router /api/auth/permission/assign [post]
 func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
-	permissionToRoleRequestDto := dto.AddPermissionToRoleRequestDto{}
+	permissionToRoleRequest := AddPermissionToRoleRequest{}
 
-	err := c.ShouldBind(&permissionToRoleRequestDto)
+	err := c.ShouldBind(&permissionToRoleRequest)
 
 	if err != nil {
 		global.LOG.Error(err)
@@ -55,7 +54,7 @@ func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
 		return
 	}
 
-	policy, err := global.Casbin.AddPolicy(permissionToRoleRequestDto.RoleKey, permissionToRoleRequestDto.Permission, permissionToRoleRequestDto.Method)
+	policy, err := global.Casbin.AddPolicy(permissionToRoleRequest.RoleKey, permissionToRoleRequest.Permission, permissionToRoleRequest.Method)
 	if err != nil {
 		global.LOG.Error(err)
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "AssignFailed"), c)
@@ -71,7 +70,7 @@ func (PermissionAPI) AssignPermissionsToRole(c *gin.Context) {
 
 // GetUserPermissions 获取用户角色权限
 func (PermissionAPI) GetUserPermissions(c *gin.Context) {
-	getPermissionRequest := dto.GetPermissionRequest{}
+	getPermissionRequest := GetPermissionRequest{}
 	err := c.ShouldBindJSON(&getPermissionRequest)
 	if err != nil {
 		global.LOG.Error(err)

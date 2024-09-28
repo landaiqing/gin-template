@@ -6,7 +6,7 @@ import (
 )
 
 func InitIP2Region() {
-	var dbPath = "ip2region/ip2region.xdb"
+	var dbPath = "resource/ip2region/ip2region.xdb"
 	cBuff, err := xdb.LoadContentFromFile(dbPath)
 	if err != nil {
 		global.LOG.Errorf("failed to load vector index from `%s`: %s\n", dbPath, err)
