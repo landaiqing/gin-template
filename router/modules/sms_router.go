@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var smsApi = api.Api.SmsApi
+var smsApi = controller.Controller.SmsController
 
 func SmsRouter(router *gin.RouterGroup) {
 	group := router.Group("/sms")

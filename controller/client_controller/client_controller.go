@@ -1,0 +1,46 @@
+package client_controller
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"schisandra-cloud-album/common/constant"
+	"schisandra-cloud-album/common/redis"
+	"schisandra-cloud-album/common/result"
+	"schisandra-cloud-album/global"
+	"schisandra-cloud-album/utils"
+	"time"
+)
+
+// GenerateClientId 生成客户端ID
+// @Summary 生成客户端ID
+// @Description 生成客户端ID
+// @Tags 微信公众号
+// @Produce json
+// @Router /controller/oauth/generate_client_id [get]
+func (ClientController) GenerateClientId(c *gin.Context) {
+	// 获取客户端IP
+	ip := utils.GetClientIP(c)
+	// 加锁
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 从Redis获取客户端ID
+	clientId := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
+	if clientId != "" {
+		result.OkWithData(clientId, c)
+		return
+	}
+	// 生成新的客户端ID
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	err = redis.Set(constant.UserLoginClientRedisKey+ip, uid.String(), time.Hour*24*7).Err()
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	result.OkWithData(uid.String(), c)
+	return
+}

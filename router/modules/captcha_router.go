@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var captchaApi = api.Api.CaptchaApi
+var captchaApi = controller.Controller.CaptchaController
 
 func CaptchaRouter(router *gin.RouterGroup) {
 	group := router.Group("/captcha")

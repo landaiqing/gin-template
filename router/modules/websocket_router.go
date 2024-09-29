@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var websocketAPI = api.Api.WebsocketApi
+var websocketAPI = controller.Controller.WebsocketController
 
 func WebsocketRouter(router *gin.RouterGroup) {
 	group := router.Group("/ws")

@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var permissionApi = api.Api.PermissionApi
+var permissionApi = controller.Controller.PermissionController
 
 func PermissionRouter(router *gin.RouterGroup) {
 	group := router.Group("/auth/permission")

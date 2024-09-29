@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var oauth = api.Api.OAuthApi
+var oauth = controller.Controller.OAuthController
 
 func OauthRouter(router *gin.RouterGroup) {
 	group := router.Group("/oauth")

@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var roleApi = api.Api.RoleApi
+var roleApi = controller.Controller.RoleController
 
 func RoleRouter(router *gin.RouterGroup) {
 	group := router.Group("/auth")

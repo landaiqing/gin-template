@@ -19,5 +19,5 @@ const (
 // 系统相关的redis key
 
 const (
-	SystemApiNonceRedisKey = "system:api:nonce:"
+	SystemApiNonceRedisKey = "system:controller:nonce:"
 )

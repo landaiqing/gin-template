@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/auth/permission/add": {
+        "/controller/auth/permission/add": {
             "post": {
                 "description": "批量添加权限",
                 "consumes": [
@@ -35,14 +35,14 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/permission_api.AddPermissionRequest"
+                            "$ref": "#/definitions/permission_controller.AddPermissionRequest"
                         }
                     }
                 ],
                 "responses": {}
             }
         },
-        "/api/auth/permission/assign": {
+        "/controller/auth/permission/assign": {
             "post": {
                 "description": "给指定角色分配权限",
                 "consumes": [
@@ -62,14 +62,14 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/permission_api.AddPermissionToRoleRequest"
+                            "$ref": "#/definitions/permission_controller.AddPermissionToRoleRequest"
                         }
                     }
                 ],
                 "responses": {}
             }
         },
-        "/api/auth/role/add_role_to_user": {
+        "/controller/auth/role/add_role_to_user": {
             "post": {
                 "description": "给指定用户添加角色",
                 "consumes": [
@@ -89,14 +89,14 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/role_api.AddRoleToUserRequest"
+                            "$ref": "#/definitions/role_controller.AddRoleToUserRequest"
                         }
                     }
                 ],
                 "responses": {}
             }
         },
-        "/api/auth/role/create": {
+        "/controller/auth/role/create": {
             "post": {
                 "description": "创建角色",
                 "consumes": [
@@ -116,14 +116,14 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/role_api.RoleRequest"
+                            "$ref": "#/definitions/role_controller.RoleRequest"
                         }
                     }
                 ],
                 "responses": {}
             }
         },
-        "/api/auth/user/List": {
+        "/controller/auth/user/List": {
             "get": {
                 "tags": [
                     "用户模块"
@@ -139,7 +139,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/delete": {
+        "/controller/auth/user/delete": {
             "delete": {
                 "tags": [
                     "用户模块"
@@ -164,7 +164,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/logout": {
+        "/controller/auth/user/logout": {
             "post": {
                 "tags": [
                     "用户模块"
@@ -180,7 +180,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/query_by_phone": {
+        "/controller/auth/user/query_by_phone": {
             "get": {
                 "tags": [
                     "用户模块"
@@ -205,7 +205,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/query_by_username": {
+        "/controller/auth/user/query_by_username": {
             "get": {
                 "tags": [
                     "用户模块"
@@ -230,7 +230,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/user/query_by_uuid": {
+        "/controller/auth/user/query_by_uuid": {
             "get": {
                 "tags": [
                     "用户模块"
@@ -255,7 +255,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/rotate/check": {
+        "/controller/captcha/rotate/check": {
             "post": {
                 "description": "验证旋转验证码",
                 "tags": [
@@ -288,7 +288,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/rotate/get": {
+        "/controller/captcha/rotate/get": {
             "get": {
                 "description": "生成旋转验证码",
                 "tags": [
@@ -305,7 +305,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/shape/get": {
+        "/controller/captcha/shape/get": {
             "get": {
                 "description": "生成点击形状验证码",
                 "tags": [
@@ -322,7 +322,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/shape/slide/check": {
+        "/controller/captcha/shape/slide/check": {
             "get": {
                 "description": "验证滑动验证码",
                 "tags": [
@@ -355,7 +355,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/shape/slide/region/get": {
+        "/controller/captcha/shape/slide/region/get": {
             "get": {
                 "description": "生成滑动区域形状验证码",
                 "tags": [
@@ -372,7 +372,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/slide/generate": {
+        "/controller/captcha/slide/generate": {
             "get": {
                 "description": "滑块基础验证码",
                 "tags": [
@@ -389,7 +389,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/text/check": {
+        "/controller/captcha/text/check": {
             "get": {
                 "description": "验证基础文字验证码",
                 "tags": [
@@ -422,7 +422,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/captcha/text/get": {
+        "/controller/captcha/text/get": {
             "get": {
                 "description": "生成基础文字验证码",
                 "tags": [
@@ -448,7 +448,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/oauth/callback_notify": {
+        "/controller/oauth/callback_notify": {
             "post": {
                 "description": "微信回调",
                 "produces": [
@@ -461,7 +461,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/callback_verify": {
+        "/controller/oauth/callback_verify": {
             "get": {
                 "description": "微信回调验证",
                 "produces": [
@@ -474,7 +474,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/generate_client_id": {
+        "/controller/oauth/generate_client_id": {
             "get": {
                 "description": "生成客户端ID",
                 "produces": [
@@ -487,7 +487,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/get_temp_qrcode": {
+        "/controller/oauth/get_temp_qrcode": {
             "get": {
                 "description": "获取临时二维码",
                 "produces": [
@@ -509,7 +509,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/gitee/callback": {
+        "/controller/oauth/gitee/callback": {
             "get": {
                 "description": "处理Gitee回调",
                 "produces": [
@@ -522,7 +522,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/gitee/get_url": {
+        "/controller/oauth/gitee/get_url": {
             "get": {
                 "description": "获取Gitee登录地址",
                 "produces": [
@@ -542,7 +542,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/oauth/github/callback": {
+        "/controller/oauth/github/callback": {
             "get": {
                 "description": "登录回调函数",
                 "produces": [
@@ -571,7 +571,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/oauth/github/get_url": {
+        "/controller/oauth/github/get_url": {
             "get": {
                 "description": "获取github登录url",
                 "produces": [
@@ -591,7 +591,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/oauth/qq/callback": {
+        "/controller/oauth/qq/callback": {
             "get": {
                 "description": "QQ登录回调",
                 "produces": [
@@ -604,7 +604,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/oauth/qq/get_url": {
+        "/controller/oauth/qq/get_url": {
             "get": {
                 "description": "获取QQ登录地址",
                 "produces": [
@@ -624,7 +624,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/sms/ali/send": {
+        "/controller/sms/ali/send": {
             "get": {
                 "description": "发送短信验证码",
                 "produces": [
@@ -646,7 +646,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/sms/smsbao/send": {
+        "/controller/sms/smsbao/send": {
             "post": {
                 "description": "短信宝发送短信验证码",
                 "produces": [
@@ -668,7 +668,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/sms/test/send": {
+        "/controller/sms/test/send": {
             "post": {
                 "description": "发送测试短信验证码",
                 "produces": [
@@ -690,7 +690,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/token/refresh": {
+        "/controller/token/refresh": {
             "post": {
                 "tags": [
                     "用户模块"
@@ -715,7 +715,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user/login": {
+        "/controller/user/login": {
             "post": {
                 "tags": [
                     "用户模块"
@@ -728,7 +728,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user_api.AccountLoginRequest"
+                            "$ref": "#/definitions/user_controller.AccountLoginRequest"
                         }
                     }
                 ],
@@ -742,7 +742,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user/phone_login": {
+        "/controller/user/phone_login": {
             "post": {
                 "tags": [
                     "用户模块"
@@ -755,7 +755,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user_api.PhoneLoginRequest"
+                            "$ref": "#/definitions/user_controller.PhoneLoginRequest"
                         }
                     }
                 ],
@@ -769,7 +769,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user/reset_password": {
+        "/controller/user/reset_password": {
             "post": {
                 "tags": [
                     "用户模块"
@@ -782,7 +782,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user_api.ResetPasswordRequest"
+                            "$ref": "#/definitions/user_controller.ResetPasswordRequest"
                         }
                     }
                 ],
@@ -796,7 +796,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/ws/gws": {
+        "/controller/ws/gws": {
             "get": {
                 "description": "创建websocket服务",
                 "tags": [
@@ -826,7 +826,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.CommentLikeRequest"
+                            "$ref": "#/definitions/comment_controller.CommentLikeRequest"
                         }
                     }
                 ],
@@ -853,7 +853,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.CommentLikeRequest"
+                            "$ref": "#/definitions/comment_controller.CommentLikeRequest"
                         }
                     }
                 ],
@@ -880,7 +880,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.CommentListRequest"
+                            "$ref": "#/definitions/comment_controller.CommentListRequest"
                         }
                     }
                 ],
@@ -907,7 +907,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.CommentRequest"
+                            "$ref": "#/definitions/comment_controller.CommentRequest"
                         }
                     }
                 ],
@@ -934,7 +934,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.ReplyListRequest"
+                            "$ref": "#/definitions/comment_controller.ReplyListRequest"
                         }
                     }
                 ],
@@ -961,7 +961,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.ReplyReplyRequest"
+                            "$ref": "#/definitions/comment_controller.ReplyReplyRequest"
                         }
                     }
                 ],
@@ -988,7 +988,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/comment_api.ReplyCommentRequest"
+                            "$ref": "#/definitions/comment_controller.ReplyCommentRequest"
                         }
                     }
                 ],
@@ -997,7 +997,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "comment_api.CommentLikeRequest": {
+        "comment_controller.CommentLikeRequest": {
             "type": "object",
             "required": [
                 "comment_id",
@@ -1016,7 +1016,7 @@ const docTemplate = `{
                 }
             }
         },
-        "comment_api.CommentListRequest": {
+        "comment_controller.CommentListRequest": {
             "type": "object",
             "required": [
                 "topic_id",
@@ -1043,7 +1043,7 @@ const docTemplate = `{
                 }
             }
         },
-        "comment_api.CommentRequest": {
+        "comment_controller.CommentRequest": {
             "type": "object",
             "required": [
                 "author",
@@ -1083,7 +1083,7 @@ const docTemplate = `{
                 }
             }
         },
-        "comment_api.ReplyCommentRequest": {
+        "comment_controller.ReplyCommentRequest": {
             "type": "object",
             "required": [
                 "author",
@@ -1131,7 +1131,7 @@ const docTemplate = `{
                 }
             }
         },
-        "comment_api.ReplyListRequest": {
+        "comment_controller.ReplyListRequest": {
             "type": "object",
             "required": [
                 "comment_id",
@@ -1158,7 +1158,7 @@ const docTemplate = `{
                 }
             }
         },
-        "comment_api.ReplyReplyRequest": {
+        "comment_controller.ReplyReplyRequest": {
             "type": "object",
             "required": [
                 "author",
@@ -1278,7 +1278,7 @@ const docTemplate = `{
                 }
             }
         },
-        "permission_api.AddPermissionRequest": {
+        "permission_controller.AddPermissionRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
@@ -1289,7 +1289,7 @@ const docTemplate = `{
                 }
             }
         },
-        "permission_api.AddPermissionToRoleRequest": {
+        "permission_controller.AddPermissionToRoleRequest": {
             "type": "object",
             "properties": {
                 "method": {
@@ -1303,7 +1303,7 @@ const docTemplate = `{
                 }
             }
         },
-        "role_api.AddRoleToUserRequest": {
+        "role_controller.AddRoleToUserRequest": {
             "type": "object",
             "required": [
                 "role_key",
@@ -1318,7 +1318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "role_api.RoleRequest": {
+        "role_controller.RoleRequest": {
             "type": "object",
             "required": [
                 "role_key",
@@ -1333,7 +1333,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user_api.AccountLoginRequest": {
+        "user_controller.AccountLoginRequest": {
             "type": "object",
             "required": [
                 "account",
@@ -1360,7 +1360,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user_api.PhoneLoginRequest": {
+        "user_controller.PhoneLoginRequest": {
             "type": "object",
             "required": [
                 "auto_login",
@@ -1379,7 +1379,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user_api.ResetPasswordRequest": {
+        "user_controller.ResetPasswordRequest": {
             "type": "object",
             "required": [
                 "captcha",

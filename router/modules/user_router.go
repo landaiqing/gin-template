@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var userApi = api.Api.UserApi
+var userApi = controller.Controller.UserController
 
 // UserRouter 用户相关路由 有auth接口组需要token验证,没有auth接口组不需要token验证
 func UserRouter(router *gin.RouterGroup) {

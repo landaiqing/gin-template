@@ -37,7 +37,7 @@ func CommentLikeProducer(messageBody []byte) {
 func CommentLikeConsumer() {
 	consumer := core.InitConsumer(CommentLikeTopic)
 	consumer.AddHandler(&MessageHandler{})
-	err := consumer.ConnectToNSQLookupd(global.CONFIG.NSQ.LookupdAddr())
+	err := consumer.ConnectToNSQD(global.CONFIG.NSQ.NsqAddr())
 	if err != nil {
 		log.Fatal(err)
 	}

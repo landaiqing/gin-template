@@ -2,10 +2,10 @@ package modules
 
 import (
 	"github.com/gin-gonic/gin"
-	"schisandra-cloud-album/api"
+	"schisandra-cloud-album/controller"
 )
 
-var commonApi = api.Api.CommonApi
+var commonApi = controller.Controller.CommonController
 
 func CommentRouter(router *gin.RouterGroup) {
 	router.POST("/auth/comment/submit", commonApi.CommentSubmit)
