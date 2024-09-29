@@ -8,6 +8,8 @@ import (
 	"schisandra-cloud-album/service/impl"
 )
 
+type PermissionController struct{}
+
 var permissionService = impl.PermissionServiceImpl{}
 
 // AddPermissions 批量添加权限

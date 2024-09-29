@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+type CaptchaController struct{}
+
 // GenerateRotateCaptcha 生成旋转验证码
 // @Summary 生成旋转验证码
 // @Description 生成旋转验证码

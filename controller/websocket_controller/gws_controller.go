@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+type WebsocketController struct {
+}
+
 const (
 	PingInterval         = 5 * time.Second  // 客户端心跳间隔
 	HeartbeatWaitTimeout = 10 * time.Second // 心跳等待超时时间

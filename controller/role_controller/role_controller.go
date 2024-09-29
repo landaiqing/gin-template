@@ -9,6 +9,8 @@ import (
 	"schisandra-cloud-album/service/impl"
 )
 
+type RoleController struct{}
+
 var roleService = impl.RoleServiceImpl{}
 
 // CreateRole 创建角色

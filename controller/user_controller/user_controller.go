@@ -13,10 +13,17 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
+	"schisandra-cloud-album/service/impl"
 	"schisandra-cloud-album/utils"
 	"strconv"
-	"time"
+	"sync"
 )
+
+type UserController struct{}
+
+var mu sync.Mutex
+var userService = impl.UserServiceImpl{}
+var userDeviceService = impl.UserDeviceServiceImpl{}
 
 // GetUserList
 // @Summary 获取所有用户列表
@@ -258,31 +265,8 @@ func (UserController) RefreshHandler(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	refreshToken := request.RefreshToken
-	parseRefreshToken, isUpd, err := utils.ParseRefreshToken(refreshToken)
-	if err != nil || !isUpd {
-		global.LOG.Errorln(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
-		return
-	}
-	accessTokenString, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: parseRefreshToken.UserID})
-	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
-		return
-	}
-	tokenKey := constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID
-	token, err := redis.Get(tokenKey).Result()
-	if err != nil || token == "" {
-		global.LOG.Errorln(err)
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
-		return
-	}
-	data := ResponseData{
-		AccessToken:  accessTokenString,
-		RefreshToken: refreshToken,
-		UID:          parseRefreshToken.UserID,
-	}
-	if err := redis.Set(tokenKey, data, time.Hour*24*7).Err(); err != nil {
+	data, res := userService.RefreshTokenService(request.RefreshToken)
+	if !res {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
@@ -329,11 +313,6 @@ func (UserController) ResetPassword(c *gin.Context) {
 		}
 	}()
 
-	if err := tx.Error; err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "DatabaseError"), c)
-		return
-	}
-
 	code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
 	if code == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
@@ -353,7 +332,7 @@ func (UserController) ResetPassword(c *gin.Context) {
 	}
 
 	user := userService.QueryUserByPhoneService(phone)
-	if reflect.DeepEqual(user, model.ScaAuthUser{}) {
+	if user.ID == 0 {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneNotRegister"), c)
 		return
 	}

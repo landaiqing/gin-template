@@ -1,6 +1,9 @@
 package service
 
-import "schisandra-cloud-album/model"
+import (
+	"schisandra-cloud-album/model"
+	"schisandra-cloud-album/service/impl"
+)
 
 type UserService interface {
 	// GetUserListService 返回用户列表
@@ -19,4 +22,6 @@ type UserService interface {
 	AddUserService(user model.ScaAuthUser) (*model.ScaAuthUser, error)
 	// UpdateUserService 更新用户信息
 	UpdateUserService(phone, encrypt string) error
+	// RefreshTokenService 刷新token
+	RefreshTokenService(refreshToken string) (*impl.ResponseData, bool)
 }

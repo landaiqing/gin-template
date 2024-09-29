@@ -8,8 +8,13 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
+	"sync"
 	"time"
 )
+
+type ClientController struct{}
+
+var mu sync.Mutex
 
 // GenerateClientId 生成客户端ID
 // @Summary 生成客户端ID

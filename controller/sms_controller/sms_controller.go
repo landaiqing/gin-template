@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+type SmsController struct{}
+
 // SendMessageByAli 发送短信验证码
 // @Summary 发送短信验证码
 // @Description 发送短信验证码
