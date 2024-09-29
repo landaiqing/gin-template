@@ -3,6 +3,7 @@ package comment_api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/acmestack/gorm-plus/gplus"
 	ginI18n "github.com/gin-contrib/i18n"
@@ -14,6 +15,7 @@ import (
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
+	"schisandra-cloud-album/mq"
 	"schisandra-cloud-album/utils"
 	"time"
 )
@@ -763,12 +765,43 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 		return
 	}
 
-	// 将点赞请求发送到 channel 中
-	likeChannel <- CommentLikeRequest{
+	mx.Lock()
+	defer mx.Unlock()
+
+	likes := model.ScaCommentLikes{
 		CommentId: likeRequest.CommentId,
-		UserID:    likeRequest.UserID,
+		UserId:    likeRequest.UserID,
 		TopicId:   likeRequest.TopicId,
 	}
+
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	res := global.DB.Create(&likes) // 假设这是插入数据库的方法
+	if res.Error != nil {
+		tx.Rollback()
+		global.LOG.Errorln(res.Error)
+		return
+	}
+
+	// 异步更新点赞计数
+	go func() {
+		if err = commentReplyService.UpdateCommentLikesCount(likeRequest.CommentId, likeRequest.TopicId); err != nil {
+			global.LOG.Errorln(err)
+		}
+	}()
+	marshal, err := json.Marshal(likes)
+	if err != nil {
+		global.LOG.Errorln(err)
+		return
+	}
+	mq.CommentLikeProducer(marshal)
+
+	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentLikeSuccess"), c)
 	return
 }
@@ -782,17 +815,39 @@ func (CommentAPI) CommentLikes(c *gin.Context) {
 // @Param comment_like_request body CommentLikeRequest true "取消点赞请求"
 // @Router /auth/comment/cancel_like [post]
 func (CommentAPI) CancelCommentLikes(c *gin.Context) {
-	likeRequest := CommentLikeRequest{}
-	if err := c.ShouldBindJSON(&likeRequest); err != nil {
+	cancelLikeRequest := CommentLikeRequest{}
+	if err := c.ShouldBindJSON(&cancelLikeRequest); err != nil {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	// 将取消点赞请求发送到 channel
-	cancelLikeChannel <- CommentLikeRequest{
-		CommentId: likeRequest.CommentId,
-		UserID:    likeRequest.UserID,
-		TopicId:   likeRequest.TopicId,
+	mx.Lock()
+	defer mx.Unlock()
+
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query, u := gplus.NewQuery[model.ScaCommentLikes]()
+	query.Eq(&u.CommentId, cancelLikeRequest.CommentId).
+		Eq(&u.UserId, cancelLikeRequest.UserID).
+		Eq(&u.TopicId, cancelLikeRequest.TopicId)
+
+	res := gplus.Delete[model.ScaCommentLikes](query)
+	if res.Error != nil {
+		tx.Rollback()
+		return // 返回错误而非打印
 	}
+
+	// 异步更新点赞计数
+	go func() {
+		if err := commentReplyService.DecrementCommentLikesCount(cancelLikeRequest.CommentId, cancelLikeRequest.TopicId); err != nil {
+			global.LOG.Errorln(err)
+		}
+	}()
+	tx.Commit()
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentLikeCancelSuccess"), c)
 	return
 }

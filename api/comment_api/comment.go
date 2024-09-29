@@ -52,3 +52,6 @@ type CommentResponse struct {
 	Current  int              `json:"current"`
 	Comments []CommentContent `json:"comments"`
 }
+
+var likeChannel = make(chan CommentLikeRequest, 1000)
+var cancelLikeChannel = make(chan CommentLikeRequest, 1000)

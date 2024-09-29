@@ -4,6 +4,7 @@ import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount"
 	"github.com/casbin/casbin/v2"
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+	"github.com/nsqio/go-nsq"
 	"github.com/rbcervilla/redisstore/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -32,4 +33,5 @@ var (
 	IP2Location        *xdb.Searcher                    // IP地址定位
 	MongoDB            *mongo.Client                    // MongoDB连接
 	Session            *redisstore.RedisStore           // session存储
+	NSQProducer        *nsq.Producer                    // NSQ生产者
 )
