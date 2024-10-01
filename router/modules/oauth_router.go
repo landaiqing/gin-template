@@ -48,6 +48,5 @@ func OauthRouterAuth(router *gin.RouterGroup) {
 		{
 			qqRouter.GET("/get_url", oauth.GetQQRedirectUrl)
 		}
-		group.GET("/get_device", oauth.GetUserLoginDevice)
 	}
 }

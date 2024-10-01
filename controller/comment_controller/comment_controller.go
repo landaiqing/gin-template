@@ -263,7 +263,7 @@ func (CommentController) ReplyList(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	response := commentReplyService.GetCommentReplyService(replyListRequest.UserID, replyListRequest.TopicId, replyListRequest.CommentId, replyListRequest.Page, replyListRequest.Size)
+	response := commentReplyService.GetCommentReplyListService(replyListRequest.UserID, replyListRequest.TopicId, replyListRequest.CommentId, replyListRequest.Page, replyListRequest.Size)
 	result.OkWithData(response, c)
 	return
 }

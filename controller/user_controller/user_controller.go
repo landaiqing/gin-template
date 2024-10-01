@@ -1,8 +1,10 @@
 package user_controller
 
 import (
+	"errors"
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
+	"github.com/mssola/useragent"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
 	"reflect"
@@ -141,7 +143,12 @@ func (UserController) AccountLogin(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
 		return
 	}
-	handelUserLogin(user, accountLoginRequest.AutoLogin, c)
+	data, res := userService.HandelUserLogin(user, accountLoginRequest.AutoLogin, c)
+	if !res {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+		return
+	}
+	result.OkWithData(data, c)
 }
 
 // PhoneLogin 手机号登录/注册
@@ -209,16 +216,21 @@ func (UserController) PhoneLogin(c *gin.Context) {
 
 		errChan := make(chan error)
 		go func() {
-			err := global.DB.Transaction(func(tx *gorm.DB) error {
-				addUser, err := userService.AddUserService(createUser)
-				if err != nil {
-					return err
+			err = global.DB.Transaction(func(tx *gorm.DB) error {
+				addUser, w := userService.AddUserService(createUser)
+				if w != nil {
+					return w
 				}
 				_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
 				if err != nil {
 					return err
 				}
-				handelUserLogin(*addUser, autoLogin, c)
+				data, res := userService.HandelUserLogin(*addUser, autoLogin, c)
+				if !res {
+					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+					return errors.New("login failed")
+				}
+				result.OkWithData(data, c)
 				return nil
 			})
 			errChan <- err
@@ -249,7 +261,12 @@ func (UserController) PhoneLogin(c *gin.Context) {
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
 			return
 		}
-		handelUserLogin(user, autoLogin, c)
+		data, res := userService.HandelUserLogin(user, autoLogin, c)
+		if !res {
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+			return
+		}
+		result.OkWithData(data, c)
 	}
 }
 
@@ -383,4 +400,66 @@ func (UserController) Logout(c *gin.Context) {
 		return
 	}
 	result.OkWithMessage(ginI18n.MustGetMessage(c, "LogoutSuccess"), c)
+}
+
+// GetUserLoginDevice 获取用户登录设备
+func (UserController) GetUserLoginDevice(c *gin.Context) {
+	userId := c.Query("user_id")
+	if userId == "" {
+		return
+	}
+	userAgent := c.GetHeader("User-Agent")
+	if userAgent == "" {
+		global.LOG.Errorln("user-agent is empty")
+		return
+	}
+	ua := useragent.New(userAgent)
+
+	ip := utils.GetClientIP(c)
+	location, err := global.IP2Location.SearchByStr(ip)
+	location = utils.RemoveZeroAndAdjust(location)
+	if err != nil {
+		global.LOG.Errorln(err)
+		return
+	}
+	isBot := ua.Bot()
+	browser, browserVersion := ua.Browser()
+	os := ua.OS()
+	mobile := ua.Mobile()
+	mozilla := ua.Mozilla()
+	platform := ua.Platform()
+	engine, engineVersion := ua.Engine()
+	device := model.ScaAuthUserDevice{
+		UserID:          &userId,
+		IP:              &ip,
+		Location:        &location,
+		Agent:           userAgent,
+		Browser:         &browser,
+		BrowserVersion:  &browserVersion,
+		OperatingSystem: &os,
+		Mobile:          &mobile,
+		Bot:             &isBot,
+		Mozilla:         &mozilla,
+		Platform:        &platform,
+		EngineName:      &engine,
+		EngineVersion:   &engineVersion,
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgentService(userId, ip, userAgent)
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = userDeviceService.AddUserDeviceService(&device)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return
+		}
+		return
+	} else {
+		err := userDeviceService.UpdateUserDeviceService(userDevice.ID, &device)
+		if err != nil {
+			global.LOG.Errorln(err)
+			return
+		}
+		return
+	}
 }

@@ -14,11 +14,13 @@ func UserRouter(router *gin.RouterGroup) {
 		userGroup.POST("/login", userApi.AccountLogin)
 		userGroup.POST("/phone_login", userApi.PhoneLogin)
 		userGroup.POST("/reset_password", userApi.ResetPassword)
+		userGroup.GET("/get_device", userApi.GetUserLoginDevice)
 	}
 	tokenGroup := router.Group("token")
 	{
 		tokenGroup.POST("/refresh", userApi.RefreshHandler)
 	}
+
 }
 
 // UserRouterAuth 用户相关路由 有auth接口组需要token验证

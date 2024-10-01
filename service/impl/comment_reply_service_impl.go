@@ -3,15 +3,20 @@ package impl
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/acmestack/gorm-plus/gplus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
+	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/dao/impl"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
+	"schisandra-cloud-album/mq"
 	"schisandra-cloud-album/utils"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -64,6 +69,14 @@ type CommentResponse struct {
 	Comments []CommentContent `json:"comments"`
 }
 
+// LikeData 点赞
+type LikeData struct {
+	CommentId int64  `json:"comment_id"`
+	UserId    string `json:"user_id"`
+	TopicId   string `json:"topic_id"`
+	Type      int    `json:"type"`
+}
+
 // SubmitCommentService 提交评论
 func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentReply, topicId string, uid string, images []string) bool {
 	tx := global.DB.Begin()
@@ -72,18 +85,19 @@ func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentRep
 			tx.Rollback()
 		}
 	}()
-	errCh := make(chan error, 2)
-	go func() {
-		errCh <- commentReplyDao.CreateCommentReply(comment)
-	}()
-	go func() {
-		errCh <- commentReplyDao.UpdateCommentReplyCount(comment.ReplyId)
-	}()
 
-	if err := <-errCh; err != nil {
+	err := commentReplyDao.CreateCommentReply(comment)
+	if err != nil {
 		global.LOG.Errorln(err)
-		tx.Rollback()
 		return false
+	}
+	if comment.ReplyId != 0 {
+		err = commentReplyDao.UpdateCommentReplyCount(comment.ReplyId)
+		if err != nil {
+			global.LOG.Errorln(err)
+			tx.Rollback()
+			return false
+		}
 	}
 
 	if len(images) > 0 {
@@ -123,8 +137,8 @@ func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentRep
 	return true
 }
 
-// GetCommentReplyService 获取评论回复
-func (CommentReplyServiceImpl) GetCommentReplyService(uid string, topicId string, commentId int64, pageNum int, size int) *CommentResponse {
+// GetCommentReplyListService 获取评论回复列表
+func (CommentReplyServiceImpl) GetCommentReplyListService(uid string, topicId string, commentId int64, pageNum int, size int) *CommentResponse {
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](pageNum, size)
 	query.Eq(&u.TopicId, topicId).Eq(&u.ReplyId, commentId).Eq(&u.CommentType, enum.REPLY).OrderByDesc(&u.Likes).OrderByAsc(&u.CreatedTime)
@@ -135,7 +149,6 @@ func (CommentReplyServiceImpl) GetCommentReplyService(uid string, topicId string
 	}
 	if len(page.Records) == 0 {
 		return nil
-
 	}
 
 	userIdsSet := make(map[string]struct{}) // 使用集合去重用户 ID
@@ -162,15 +175,34 @@ func (CommentReplyServiceImpl) GetCommentReplyService(uid string, topicId string
 	go func() {
 		defer wg.Done()
 		// 查询评论用户信息
-		queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
-		queryUser.Select(&n.UID, &n.Avatar, &n.Nickname).In(&n.UID, userIds)
-		userInfos, userInfosDB := gplus.SelectList(queryUser)
-		if userInfosDB.Error != nil {
-			global.LOG.Errorln(userInfosDB.Error)
-			return
+		var user = model.ScaAuthUser{}
+		var missingUserIds []string
+		for _, userId := range userIds {
+			redisKey := constant.CommentUserListRedisKey + userId
+			userInfo := redis.Get(redisKey).Val()
+			if userInfo != "" {
+				err := json.Unmarshal([]byte(userInfo), &user)
+				if err != nil {
+					global.LOG.Errorln(err)
+					continue
+				}
+				userInfoMap[userId] = user
+			} else {
+				missingUserIds = append(missingUserIds, userId)
+			}
 		}
-		for _, userInfo := range userInfos {
-			userInfoMap[*userInfo.UID] = *userInfo
+		if len(missingUserIds) > 0 {
+			queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
+			queryUser.Select(&n.UID, &n.Avatar, &n.Nickname).In(&n.UID, missingUserIds)
+			userInfos, userInfosDB := gplus.SelectList(queryUser)
+			if userInfosDB.Error != nil {
+				global.LOG.Errorln(userInfosDB.Error)
+				return
+			}
+			for _, userInfo := range userInfos {
+				userInfoMap[*userInfo.UID] = *userInfo
+				redis.Set(constant.CommentUserListRedisKey+*userInfo.UID, userInfo, 24*time.Hour)
+			}
 		}
 	}()
 
@@ -328,32 +360,62 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 	// 查询评论用户信息
 	go func() {
 		defer wg.Done()
-		queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
-		queryUser.Select(&n.UID, &n.Avatar, &n.Nickname).In(&n.UID, userIds)
-		userInfos, userInfosDB := gplus.SelectList(queryUser)
-		if userInfosDB.Error != nil {
-			global.LOG.Errorln(userInfosDB.Error)
-			return
+		var user = model.ScaAuthUser{}
+		var missingUserIds []string
+		for _, userId := range userIds {
+			redisKey := constant.CommentUserListRedisKey + userId
+			userInfo := redis.Get(redisKey).Val()
+			if userInfo != "" {
+				err := json.Unmarshal([]byte(userInfo), &user)
+				if err != nil {
+					global.LOG.Errorln(err)
+					continue
+				}
+				userInfoMap[userId] = user
+			} else {
+				missingUserIds = append(missingUserIds, userId)
+			}
 		}
-		for _, userInfo := range userInfos {
-			userInfoMap[*userInfo.UID] = *userInfo
+		if len(missingUserIds) > 0 {
+			queryUser, n := gplus.NewQuery[model.ScaAuthUser]()
+			queryUser.Select(&n.UID, &n.Avatar, &n.Nickname).In(&n.UID, missingUserIds)
+			userInfos, userInfosDB := gplus.SelectList(queryUser)
+			if userInfosDB.Error != nil {
+				global.LOG.Errorln(userInfosDB.Error)
+				return
+			}
+			for _, userInfo := range userInfos {
+				userInfoMap[*userInfo.UID] = *userInfo
+				redis.Set(constant.CommentUserListRedisKey+*userInfo.UID, userInfo, 24*time.Hour)
+			}
 		}
 	}()
-
 	// 查询评论点赞状态
 	go func() {
 		defer wg.Done()
 		if len(page.Records) > 0 {
-			queryLike, l := gplus.NewQuery[model.ScaCommentLikes]()
-			queryLike.Eq(&l.TopicId, topicId).Eq(&l.UserId, uid).In(&l.CommentId, commentIds)
-			likes, likesDB := gplus.SelectList(queryLike)
-			if likesDB.Error != nil {
-				global.LOG.Errorln(likesDB.Error)
-				return
+			redisKey := constant.CommentLikeListRedisKey + uid + ":" + topicId
+			// 查询 Redis 中的点赞状态
+			for _, commentId := range commentIds {
+				exists, err := redis.SIsMember(redisKey, commentId).Result()
+				if err != nil {
+					global.LOG.Errorln(err)
+					return
+				}
+				likeMap[commentId] = exists // `exists` 为 true 则表示已点赞，false 则表示未点赞
 			}
-			for _, like := range likes {
-				likeMap[like.CommentId] = true
-			}
+			//queryLike, l := gplus.NewQuery[model.ScaCommentLikes]()
+			//queryLike.Eq(&l.TopicId, topicId).Eq(&l.UserId, uid).In(&l.CommentId, commentIds)
+			//likes, likesDB := gplus.SelectList(queryLike)
+			//if likesDB.Error != nil {
+			//	global.LOG.Errorln(likesDB.Error)
+			//	return
+			//}
+			//for _, like := range likes {
+			//	likeMap[like.CommentId] = true
+			//	_ = redis.SAdd(redisKey, like.CommentId)
+			//}
+
 		}
 	}()
 
@@ -452,67 +514,47 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 
 // CommentLikeService 评论点赞
 func (CommentReplyServiceImpl) CommentLikeService(uid string, commentId int64, topicId string) bool {
-	mx.Lock()
-	defer mx.Unlock()
-	likes := model.ScaCommentLikes{
+	key := constant.CommentLikeLockRedisKey + topicId + ":" + strconv.FormatInt(commentId, 10) + ":" + uid
+	locked, err := redis.Set(key, "locked", 5*time.Minute).Result()
+	if err != nil || locked != "OK" {
+		return false
+	}
+	defer redis.Del(key)
+
+	likeData := LikeData{
 		CommentId: commentId,
 		UserId:    uid,
 		TopicId:   topicId,
+		Type:      enum.CommentLike,
 	}
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	res := global.DB.Create(&likes) // 假设这是插入数据库的方法
-	if res.Error != nil {
-		tx.Rollback()
-		global.LOG.Errorln(res.Error)
+	jsonData, err := json.Marshal(likeData)
+	if err != nil {
+		global.LOG.Error(err.Error())
 		return false
 	}
-
-	// 异步更新点赞计数
-	go func() {
-		if err := commentReplyDao.UpdateCommentLikesCount(commentId, topicId); err != nil {
-			global.LOG.Errorln(err)
-		}
-	}()
-	tx.Commit()
+	mq.CommentLikeProducer(jsonData)
 	return true
 }
 
 // CommentDislikeService 取消评论点赞
 func (CommentReplyServiceImpl) CommentDislikeService(uid string, commentId int64, topicId string) bool {
-	mx.Lock()
-	defer mx.Unlock()
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	query, u := gplus.NewQuery[model.ScaCommentLikes]()
-	query.Eq(&u.CommentId, commentId).
-		Eq(&u.UserId, uid).
-		Eq(&u.TopicId, topicId)
-
-	res := gplus.Delete[model.ScaCommentLikes](query)
-	if res.Error != nil {
-		tx.Rollback()
+	key := constant.CommentDislikeLockRedisKey + topicId + ":" + strconv.FormatInt(commentId, 10) + ":" + uid
+	locked, err := redis.Set(key, "locked", 5*time.Minute).Result()
+	if err != nil || locked != "OK" {
 		return false
 	}
-
-	// 异步更新点赞计数
-	go func() {
-		if err := commentReplyDao.DecrementCommentLikesCount(commentId, topicId); err != nil {
-			global.LOG.Errorln(err)
-		}
-	}()
-	tx.Commit()
+	defer redis.Del(key)
+	likeData := LikeData{
+		CommentId: commentId,
+		UserId:    uid,
+		TopicId:   topicId,
+		Type:      enum.CommentDislike,
+	}
+	jsonData, err := json.Marshal(likeData)
+	if err != nil {
+		global.LOG.Error(err.Error())
+		return false
+	}
+	mq.CommentLikeProducer(jsonData)
 	return true
 }
