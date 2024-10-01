@@ -21,6 +21,7 @@ func main() {
 	core.InitWechat()      // 初始化微信
 	core.InitCasbin()      // 初始化Casbin
 	core.InitIP2Region()   // 初始化IP2Region
+	core.InitSensitive()   // 初始化敏感词检测
 	core.InitNSQProducer() // 初始化NSQ生产者
 	mq.CommentLikeConsumer()
 	// 命令行参数绑定

@@ -62,9 +62,9 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 	if commentRequest.UserID == commentRequest.Author {
 		isAuthor = 1
 	}
-
+	commentContent := global.SensitiveManager.Replace(commentRequest.Content, '*')
 	commentReply := model.ScaCommentReply{
-		Content:         commentRequest.Content,
+		Content:         commentContent,
 		UserId:          commentRequest.UserID,
 		TopicId:         commentRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
@@ -131,9 +131,9 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 	if replyCommentRequest.UserID == replyCommentRequest.Author {
 		isAuthor = 1
 	}
-
+	commentContent := global.SensitiveManager.Replace(replyCommentRequest.Content, '*')
 	commentReply := model.ScaCommentReply{
-		Content:         replyCommentRequest.Content,
+		Content:         commentContent,
 		UserId:          replyCommentRequest.UserID,
 		TopicId:         replyCommentRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
@@ -202,9 +202,9 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 	if replyReplyRequest.UserID == replyReplyRequest.Author {
 		isAuthor = 1
 	}
-
+	commentContent := global.SensitiveManager.Replace(replyReplyRequest.Content, '*')
 	commentReply := model.ScaCommentReply{
-		Content:         replyReplyRequest.Content,
+		Content:         commentContent,
 		UserId:          replyReplyRequest.UserID,
 		TopicId:         replyReplyRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
