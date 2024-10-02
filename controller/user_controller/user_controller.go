@@ -139,7 +139,7 @@ func (UserController) AccountLogin(c *gin.Context) {
 		return
 	}
 
-	if !utils.Verify(*user.Password, password) {
+	if !utils.Verify(user.Password, password) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PasswordError"), c)
 		return
 	}
@@ -171,101 +171,66 @@ func (UserController) PhoneLogin(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "PhoneErrorFormat"), c)
 		return
 	}
+	// 获取验证码
+	code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
+	if code == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
+		return
+	}
 
-	userChan := make(chan model.ScaAuthUser)
-	go func() {
-		user := userService.QueryUserByPhoneService(phone)
-		userChan <- user
+	if captcha != code {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
+		return
+	}
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
 	}()
-
-	user := <-userChan
-	close(userChan)
+	// 查询用户
+	user := userService.QueryUserByPhoneService(phone)
 
 	if user.ID == 0 {
 		// 未注册
-		codeChan := make(chan *string)
-		go func() {
-			code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
-			codeChan <- &code
-		}()
-
-		code := <-codeChan
-		close(codeChan)
-
-		if code == nil {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
-			return
-		}
-
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
-
-		avatar, err := utils.GenerateAvatar(uidStr)
-		if err != nil {
-			global.LOG.Errorln(err)
-			return
-		}
+		avatar := utils.GenerateAvatar(uidStr)
 		name := randomname.GenerateName()
 		createUser := model.ScaAuthUser{
-			UID:      &uidStr,
-			Phone:    &phone,
-			Avatar:   &avatar,
-			Nickname: &name,
-			Gender:   &enum.Male,
+			UID:      uidStr,
+			Phone:    phone,
+			Avatar:   avatar,
+			Nickname: name,
+			Gender:   enum.Male,
 		}
 
-		errChan := make(chan error)
-		go func() {
-			err = global.DB.Transaction(func(tx *gorm.DB) error {
-				addUser, w := userService.AddUserService(createUser)
-				if w != nil {
-					return w
-				}
-				_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
-				if err != nil {
-					return err
-				}
-				data, res := userService.HandelUserLogin(*addUser, autoLogin, c)
-				if !res {
-					result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
-					return errors.New("login failed")
-				}
-				result.OkWithData(data, c)
-				return nil
-			})
-			errChan <- err
-		}()
-
-		err = <-errChan
-		close(errChan)
-
+		addUser, w := userService.AddUserService(createUser)
+		if w != nil {
+			tx.Rollback()
+			return
+		}
+		_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
 		if err != nil {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "RegisterUserError"), c)
+			tx.Rollback()
 			return
 		}
-	} else {
-		codeChan := make(chan string)
-		go func() {
-			code := redis.Get(constant.UserLoginSmsRedisKey + phone).Val()
-			codeChan <- code
-		}()
-
-		code := <-codeChan
-		close(codeChan)
-
-		if code == "" {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaExpired"), c)
-			return
-		}
-		if captcha != code {
-			result.FailWithMessage(ginI18n.MustGetMessage(c, "CaptchaError"), c)
-			return
-		}
-		data, res := userService.HandelUserLogin(user, autoLogin, c)
+		data, res := userService.HandelUserLogin(*addUser, autoLogin, c)
 		if !res {
+			tx.Rollback()
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
 			return
 		}
+		tx.Commit()
+		result.OkWithData(data, c)
+	} else {
+		data, res := userService.HandelUserLogin(user, autoLogin, c)
+		if !res {
+			tx.Rollback()
+			result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginFailed"), c)
+			return
+		}
+		tx.Commit()
 		result.OkWithData(data, c)
 	}
 }
@@ -360,7 +325,7 @@ func (UserController) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := userService.UpdateUserService(phone, encrypt); err != nil {
+	if err = userService.UpdateUserService(phone, encrypt); err != nil {
 		tx.Rollback()
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ResetPasswordError"), c)
 		return
@@ -430,36 +395,44 @@ func (UserController) GetUserLoginDevice(c *gin.Context) {
 	platform := ua.Platform()
 	engine, engineVersion := ua.Engine()
 	device := model.ScaAuthUserDevice{
-		UserID:          &userId,
-		IP:              &ip,
-		Location:        &location,
+		UserID:          userId,
+		IP:              ip,
+		Location:        location,
 		Agent:           userAgent,
-		Browser:         &browser,
-		BrowserVersion:  &browserVersion,
-		OperatingSystem: &os,
-		Mobile:          &mobile,
-		Bot:             &isBot,
-		Mozilla:         &mozilla,
-		Platform:        &platform,
-		EngineName:      &engine,
-		EngineVersion:   &engineVersion,
+		Browser:         browser,
+		BrowserVersion:  browserVersion,
+		OperatingSystem: os,
+		Mobile:          mobile,
+		Bot:             isBot,
+		Mozilla:         mozilla,
+		Platform:        platform,
+		EngineName:      engine,
+		EngineVersion:   engineVersion,
 	}
-	mu.Lock()
-	defer mu.Unlock()
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 	userDevice, err := userDeviceService.GetUserDeviceByUIDIPAgentService(userId, ip, userAgent)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		err = userDeviceService.AddUserDeviceService(&device)
 		if err != nil {
+			tx.Rollback()
 			global.LOG.Errorln(err)
 			return
 		}
+		tx.Commit()
 		return
 	} else {
-		err := userDeviceService.UpdateUserDeviceService(userDevice.ID, &device)
+		err = userDeviceService.UpdateUserDeviceService(userDevice.ID, &device)
 		if err != nil {
+			tx.Rollback()
 			global.LOG.Errorln(err)
 			return
 		}
+		tx.Commit()
 		return
 	}
 }

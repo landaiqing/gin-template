@@ -59,13 +59,13 @@ func (UserDaoImpl) AddUser(user model.ScaAuthUser) (*model.ScaAuthUser, error) {
 
 // UpdateUser 更新用户
 func (UserDaoImpl) UpdateUser(phone string, password string) error {
-	return global.DB.Model(&model.ScaAuthUser{}).Where("phone = ? and deleted = 0", phone).Updates(&model.ScaAuthUser{Password: &password}).Error
+	return global.DB.Model(&model.ScaAuthUser{}).Where("phone = ? and deleted = 0", phone).Updates(&model.ScaAuthUser{Password: password}).Error
 }
 
 // DeleteUser 删除用户
 func (UserDaoImpl) DeleteUser(uuid string) error {
 	authUser := model.ScaAuthUser{}
-	return global.DB.Model(&authUser).Where("uid = ?", uuid).Updates(&model.ScaAuthUser{Deleted: &enum.DELETED}).Error
+	return global.DB.Model(&authUser).Where("uid = ?", uuid).Updates(&model.ScaAuthUser{Deleted: enum.DELETED}).Error
 }
 
 // QueryUserByPhone 根据手机号查询用户

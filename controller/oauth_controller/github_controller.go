@@ -141,124 +141,111 @@ func GetUserInfo(token *Token) (map[string]interface{}, error) {
 // @Success 200 {string} string "登录成功"
 // @Router /controller/oauth/github/callback [get]
 func (OAuthController) Callback(c *gin.Context) {
-	var err error
 	// 获取 code
-	var code = c.Query("code")
+	code := c.Query("code")
 	if code == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
 
-	// 使用channel来接收异步操作的结果
-	tokenChan := make(chan *Token)
-	userInfoChan := make(chan map[string]interface{})
-	errChan := make(chan error)
-
-	// 异步获取token
-	go func() {
-		var tokenAuthUrl = GetTokenAuthUrl(code)
-		token, err := GetToken(tokenAuthUrl)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		tokenChan <- token
-	}()
-
-	// 异步获取用户信息
-	go func() {
-		token := <-tokenChan
-		if token == nil {
-			return
-		}
-		userInfo, err := GetUserInfo(token)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		userInfoChan <- userInfo
-	}()
-
-	select {
-	case err = <-errChan:
+	// 获取 token
+	tokenAuthUrl := GetTokenAuthUrl(code)
+	token, err := GetToken(tokenAuthUrl)
+	if err != nil {
 		global.LOG.Error(err)
 		return
-	case userInfo := <-userInfoChan:
-		if userInfo == nil {
-			global.LOG.Error(<-errChan)
-			return
-		}
-		// 继续处理用户信息
-		userInfoBytes, err := json.Marshal(<-userInfoChan)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		var gitHubUser GitHubUser
-		err = json.Unmarshal(userInfoBytes, &gitHubUser)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		Id := strconv.Itoa(gitHubUser.ID)
-		userSocial, err := userSocialService.QueryUserSocialByOpenIDService(Id, enum.OAuthSourceGithub)
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			db := global.DB
-			tx := db.Begin() // 开始事务
-			if tx.Error != nil {
-				global.LOG.Error(tx.Error)
-				return
-			}
-			defer func() {
-				if r := recover(); r != nil {
-					tx.Rollback()
-				}
-			}()
-			// 第一次登录，创建用户
-			uid := idgen.NextId()
-			uidStr := strconv.FormatInt(uid, 10)
-			user := model.ScaAuthUser{
-				UID:      &uidStr,
-				Username: &gitHubUser.Login,
-				Nickname: &gitHubUser.Name,
-				Avatar:   &gitHubUser.AvatarURL,
-				Blog:     &gitHubUser.Blog,
-				Email:    &gitHubUser.Email,
-				Gender:   &enum.Male,
-			}
-			addUser, err := userService.AddUserService(user)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			github := enum.OAuthSourceGithub
-			userSocial = model.ScaAuthUserSocial{
-				UserID: &uidStr,
-				OpenID: &Id,
-				Source: &github,
-			}
-			err = userSocialService.AddUserSocialService(userSocial)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			if err := tx.Commit().Error; err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			HandleLoginResponse(c, *addUser.UID)
-		} else {
-			HandleLoginResponse(c, *userSocial.UserID)
-		}
+	}
+	if token == nil {
+		global.LOG.Error(errors.New("failed to get token"))
 		return
+	}
+
+	// 获取用户信息
+	userInfo, err := GetUserInfo(token)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+
+	if userInfo == nil {
+		global.LOG.Error(errors.New("failed to get user info"))
+		return
+	}
+
+	// 处理用户信息
+	userInfoBytes, err := json.Marshal(userInfo)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	var gitHubUser GitHubUser
+	err = json.Unmarshal(userInfoBytes, &gitHubUser)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+
+	Id := strconv.Itoa(gitHubUser.ID)
+	userSocial, err := userSocialService.QueryUserSocialByOpenIDService(Id, enum.OAuthSourceGithub)
+
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		db := global.DB
+		tx := db.Begin() // 开始事务
+		if tx.Error != nil {
+			global.LOG.Error(tx.Error)
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		// 第一次登录，创建用户
+		uid := idgen.NextId()
+		uidStr := strconv.FormatInt(uid, 10)
+		user := model.ScaAuthUser{
+			UID:      uidStr,
+			Username: gitHubUser.Login,
+			Nickname: gitHubUser.Name,
+			Avatar:   gitHubUser.AvatarURL,
+			Blog:     gitHubUser.Blog,
+			Email:    gitHubUser.Email,
+			Gender:   enum.Male,
+		}
+		addUser, wrong := userService.AddUserService(user)
+		if wrong != nil {
+			tx.Rollback()
+			global.LOG.Error(wrong)
+			return
+		}
+
+		github := enum.OAuthSourceGithub
+		userSocial = model.ScaAuthUserSocial{
+			UserID: uidStr,
+			OpenID: Id,
+			Source: github,
+		}
+		err = userSocialService.AddUserSocialService(userSocial)
+		if err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+
+		_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+		if err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+		if err = tx.Commit().Error; err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+		HandleLoginResponse(c, addUser.UID)
+	} else {
+		HandleLoginResponse(c, userSocial.UserID)
 	}
 }

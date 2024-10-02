@@ -11,6 +11,7 @@ import (
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/service/impl"
 	"schisandra-cloud-album/utils"
+	"sync"
 	"time"
 )
 
@@ -31,12 +32,73 @@ var script = `
         `
 
 func HandleLoginResponse(c *gin.Context, uid string) {
-	res, data := HandelUserLogin(uid, c)
-	if !res {
+	// 查询用户信息
+	user := userService.QueryUserByUuidService(&uid)
+
+	var accessToken, refreshToken string
+	var expiresAt int64
+	var err error
+	var wg sync.WaitGroup
+	var accessTokenErr error
+
+	wg.Add(2) // 增加计数器，等待两个协程完成
+
+	// 使用goroutine生成accessToken
+	go func() {
+		defer wg.Done() // 完成时减少计数器
+		accessToken, accessTokenErr = utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: &uid})
+	}()
+
+	// 使用goroutine生成refreshToken
+	go func() {
+		defer wg.Done() // 完成时减少计数器
+		refreshToken, expiresAt = utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &uid}, time.Hour*24*7)
+	}()
+
+	// 等待两个协程完成
+	wg.Wait()
+
+	// 检查生成accessToken时是否有错误
+	if accessTokenErr != nil {
+		global.LOG.Error(accessTokenErr)
 		return
 	}
 
-	tokenData, err := json.Marshal(data)
+	data := ResponseData{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    expiresAt,
+		UID:          &uid,
+		UserInfo: UserInfo{
+			Username: user.Username,
+			Nickname: user.Nickname,
+			Avatar:   user.Avatar,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Gender:   user.Gender,
+			Status:   user.Status,
+			CreateAt: *user.CreatedTime,
+		},
+	}
+
+	if err = utils.SetSession(c, constant.SessionKey, data); err != nil {
+		return
+	}
+
+	// 将数据存入redis
+	if err = redis.Set(constant.UserLoginTokenRedisKey+uid, data, time.Hour*24*7).Err(); err != nil {
+		global.LOG.Error(err)
+		return
+	}
+
+	responseData := result.Response{
+		Data:    data,
+		Message: "success",
+		Code:    200,
+		Success: true,
+	}
+
+	tokenData, err := json.Marshal(responseData)
 	if err != nil {
 		global.LOG.Error(err)
 		return
@@ -45,79 +107,4 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 	formattedScript := fmt.Sprintf(script, tokenData, global.CONFIG.System.WebURL())
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(formattedScript))
 	return
-}
-
-// HandelUserLogin 处理用户登录
-func HandelUserLogin(userId string, c *gin.Context) (bool, result.Response) {
-	// 使用goroutine生成accessToken
-	accessTokenChan := make(chan string)
-	errChan := make(chan error)
-	go func() {
-		accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: &userId})
-		if err != nil {
-			errChan <- err
-			return
-		}
-		accessTokenChan <- accessToken
-	}()
-
-	// 使用goroutine生成refreshToken
-	refreshTokenChan := make(chan string)
-	expiresAtChan := make(chan int64)
-	go func() {
-		refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
-		refreshTokenChan <- refreshToken
-		expiresAtChan <- expiresAt
-	}()
-
-	// 等待accessToken和refreshToken生成完成
-	var accessToken string
-	var refreshToken string
-	var expiresAt int64
-	var err error
-	select {
-	case accessToken = <-accessTokenChan:
-	case err = <-errChan:
-		global.LOG.Error(err)
-		return false, result.Response{}
-	}
-	select {
-	case refreshToken = <-refreshTokenChan:
-	case expiresAt = <-expiresAtChan:
-	}
-
-	data := ResponseData{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
-		UID:          &userId,
-	}
-	wrong := utils.SetSession(c, constant.SessionKey, data)
-	if wrong != nil {
-		return false, result.Response{}
-	}
-	// 使用goroutine将数据存入redis
-	redisErrChan := make(chan error)
-	go func() {
-		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, data, time.Hour*24*7).Err()
-		if fail != nil {
-			redisErrChan <- fail
-			return
-		}
-		redisErrChan <- nil
-	}()
-
-	// 等待redis操作完成
-	redisErr := <-redisErrChan
-	if redisErr != nil {
-		global.LOG.Error(redisErr)
-		return false, result.Response{}
-	}
-	responseData := result.Response{
-		Data:    data,
-		Message: "success",
-		Code:    200,
-		Success: true,
-	}
-	return true, responseData
 }

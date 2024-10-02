@@ -166,72 +166,40 @@ func GetQQUserUserInfo(token *QQToken, openId string) (map[string]interface{}, e
 // @Produce  json
 // @Router /controller/oauth/qq/callback [get]
 func (OAuthController) QQCallback(c *gin.Context) {
-	var err error
 	// 获取 code
-	var code = c.Query("code")
+	code := c.Query("code")
 	if code == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
 
-	// 通过 code, 获取 token
-	var tokenAuthUrl = GetQQTokenAuthUrl(code)
-	tokenChan := make(chan *QQToken)
-	errChan := make(chan error)
-	go func() {
-		token, err := GetQQToken(tokenAuthUrl)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		tokenChan <- token
-	}()
-	var token *QQToken
-	select {
-	case token = <-tokenChan:
-	case err = <-errChan:
+	// 通过 code 获取 token
+	tokenAuthUrl := GetQQTokenAuthUrl(code)
+	token, err := GetQQToken(tokenAuthUrl)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	if token == nil {
+		global.LOG.Error(errors.New("failed to get token"))
+		return
+	}
+
+	// 通过 token 获取 openid
+	authQQme, err := GetQQUserOpenID(token)
+	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
 
-	// 通过 token，获取 openid
-	openIDChan := make(chan *AuthQQme)
-	errChan = make(chan error)
-	go func() {
-		authQQme, err := GetQQUserOpenID(token)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		openIDChan <- authQQme
-	}()
-	var authQQme *AuthQQme
-	select {
-	case authQQme = <-openIDChan:
-	case err = <-errChan:
+	// 通过 token 和 openid 获取用户信息
+	userInfo, err := GetQQUserUserInfo(token, authQQme.OpenID)
+	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
 
-	// 通过token，获取用户信息
-	userInfoChan := make(chan map[string]interface{})
-	errChan = make(chan error)
-	go func() {
-		userInfo, err := GetQQUserUserInfo(token, authQQme.OpenID)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		userInfoChan <- userInfo
-	}()
-	var userInfo map[string]interface{}
-	select {
-	case userInfo = <-userInfoChan:
-	case err = <-errChan:
-		global.LOG.Error(err)
-		return
-	}
-
+	// 处理用户信息
 	userInfoBytes, err := json.Marshal(userInfo)
 	if err != nil {
 		global.LOG.Error(err)
@@ -244,6 +212,7 @@ func (OAuthController) QQCallback(c *gin.Context) {
 		return
 	}
 
+	// 查询用户社交信息
 	userSocial, err := userSocialService.QueryUserSocialByOpenIDService(authQQme.OpenID, enum.OAuthSourceQQ)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		db := global.DB
@@ -257,27 +226,29 @@ func (OAuthController) QQCallback(c *gin.Context) {
 				tx.Rollback()
 			}
 		}()
+
 		// 第一次登录，创建用户
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
 		user := model.ScaAuthUser{
-			UID:      &uidStr,
-			Username: &authQQme.OpenID,
-			Nickname: &qqUserInfo.Nickname,
-			Avatar:   &qqUserInfo.FigureurlQq1,
-			Gender:   &qqUserInfo.Gender,
+			UID:      uidStr,
+			Username: authQQme.OpenID,
+			Nickname: qqUserInfo.Nickname,
+			Avatar:   qqUserInfo.FigureurlQq1,
+			Gender:   qqUserInfo.Gender,
 		}
-		addUser, err := userService.AddUserService(user)
-		if err != nil {
+		addUser, wrong := userService.AddUserService(user)
+		if wrong != nil {
 			tx.Rollback()
-			global.LOG.Error(err)
+			global.LOG.Error(wrong)
 			return
 		}
+
 		qq := enum.OAuthSourceQQ
 		userSocial = model.ScaAuthUserSocial{
-			UserID: &uidStr,
-			OpenID: &authQQme.OpenID,
-			Source: &qq,
+			UserID: uidStr,
+			OpenID: authQQme.OpenID,
+			Source: qq,
 		}
 		err = userSocialService.AddUserSocialService(userSocial)
 		if err != nil {
@@ -285,20 +256,22 @@ func (OAuthController) QQCallback(c *gin.Context) {
 			global.LOG.Error(err)
 			return
 		}
+
 		_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
 		if err != nil {
 			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
-		if err := tx.Commit().Error; err != nil {
+
+		if err = tx.Commit().Error; err != nil {
 			tx.Rollback()
 			global.LOG.Error(err)
 			return
 		}
-		HandleLoginResponse(c, *addUser.UID)
+		HandleLoginResponse(c, addUser.UID)
 		return
 	} else {
-		HandleLoginResponse(c, *userSocial.UserID)
+		HandleLoginResponse(c, userSocial.UserID)
 	}
 }

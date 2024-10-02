@@ -1,6 +1,6 @@
 package enum
 
 var (
-	Male   = "男"
-	Female = "女"
+	Male   = "Male"
+	Female = "Female"
 )

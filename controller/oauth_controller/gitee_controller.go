@@ -135,120 +135,103 @@ func GetGiteeUserInfo(token *Token) (map[string]interface{}, error) {
 // @Produce  json
 // @Router /controller/oauth/gitee/callback [get]
 func (OAuthController) GiteeCallback(c *gin.Context) {
-	var err error
 	// 获取 code
-	var code = c.Query("code")
+	code := c.Query("code")
 	if code == "" {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
 
-	// 异步获取 token
-	var tokenChan = make(chan *Token)
-	var errChan = make(chan error)
-	go func() {
-		var tokenAuthUrl = GetGiteeTokenAuthUrl(code)
-		token, err := GetGiteeToken(tokenAuthUrl)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		tokenChan <- token
-	}()
-
-	// 异步获取用户信息
-	var userInfoChan = make(chan map[string]interface{})
-	go func() {
-		token := <-tokenChan
-		if token == nil {
-			errChan <- errors.New("failed to get token")
-			return
-		}
-		userInfo, err := GetGiteeUserInfo(token)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		userInfoChan <- userInfo
-	}()
-
-	// 等待结果
-	select {
-	case err = <-errChan:
+	// 获取 token
+	tokenAuthUrl := GetGiteeTokenAuthUrl(code)
+	token, err := GetGiteeToken(tokenAuthUrl)
+	if err != nil {
 		global.LOG.Error(err)
 		return
-	case userInfo := <-userInfoChan:
-		userInfoBytes, err := json.Marshal(userInfo)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-		var giteeUser GiteeUser
-		err = json.Unmarshal(userInfoBytes, &giteeUser)
-		if err != nil {
-			global.LOG.Error(err)
-			return
-		}
-
-		Id := strconv.Itoa(giteeUser.ID)
-		userSocial, err := userSocialService.QueryUserSocialByOpenIDService(Id, enum.OAuthSourceGitee)
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			db := global.DB
-			tx := db.Begin() // 开始事务
-			if tx.Error != nil {
-				global.LOG.Error(tx.Error)
-				return
-			}
-			defer func() {
-				if r := recover(); r != nil {
-					tx.Rollback()
-				}
-			}()
-			// 第一次登录，创建用户
-			uid := idgen.NextId()
-			uidStr := strconv.FormatInt(uid, 10)
-			user := model.ScaAuthUser{
-				UID:      &uidStr,
-				Username: &giteeUser.Login,
-				Nickname: &giteeUser.Name,
-				Avatar:   &giteeUser.AvatarURL,
-				Blog:     &giteeUser.Blog,
-				Email:    &giteeUser.Email,
-				Gender:   &enum.Male,
-			}
-			addUser, err := userService.AddUserService(user)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			gitee := enum.OAuthSourceGitee
-			userSocial = model.ScaAuthUserSocial{
-				UserID: &uidStr,
-				OpenID: &Id,
-				Source: &gitee,
-			}
-			err = userSocialService.AddUserSocialService(userSocial)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			if err := tx.Commit().Error; err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return
-			}
-			HandleLoginResponse(c, *addUser.UID)
-		} else {
-			HandleLoginResponse(c, *userSocial.UserID)
-		}
+	}
+	if token == nil {
+		global.LOG.Error(errors.New("failed to get token"))
 		return
+	}
+
+	// 获取用户信息
+	userInfo, err := GetGiteeUserInfo(token)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+
+	// 处理用户信息
+	userInfoBytes, err := json.Marshal(userInfo)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+	var giteeUser GiteeUser
+	err = json.Unmarshal(userInfoBytes, &giteeUser)
+	if err != nil {
+		global.LOG.Error(err)
+		return
+	}
+
+	Id := strconv.Itoa(giteeUser.ID)
+	userSocial, err := userSocialService.QueryUserSocialByOpenIDService(Id, enum.OAuthSourceGitee)
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		db := global.DB
+		tx := db.Begin() // 开始事务
+		if tx.Error != nil {
+			global.LOG.Error(tx.Error)
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				tx.Rollback()
+			}
+		}()
+
+		// 第一次登录，创建用户
+		uid := idgen.NextId()
+		uidStr := strconv.FormatInt(uid, 10)
+		user := model.ScaAuthUser{
+			UID:      uidStr,
+			Username: giteeUser.Login,
+			Nickname: giteeUser.Name,
+			Avatar:   giteeUser.AvatarURL,
+			Blog:     giteeUser.Blog,
+			Email:    giteeUser.Email,
+			Gender:   enum.Male,
+		}
+		addUser, wrong := userService.AddUserService(user)
+		if wrong != nil {
+			tx.Rollback()
+			global.LOG.Error(wrong)
+			return
+		}
+		gitee := enum.OAuthSourceGitee
+		userSocial = model.ScaAuthUserSocial{
+			UserID: uidStr,
+			OpenID: Id,
+			Source: gitee,
+		}
+		err = userSocialService.AddUserSocialService(userSocial)
+		if err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+		_, err = global.Casbin.AddRoleForUser(uidStr, enum.User)
+		if err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+		if err = tx.Commit().Error; err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return
+		}
+		HandleLoginResponse(c, addUser.UID)
+	} else {
+		HandleLoginResponse(c, userSocial.UserID)
 	}
 }

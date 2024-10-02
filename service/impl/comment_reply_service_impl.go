@@ -200,8 +200,8 @@ func (CommentReplyServiceImpl) GetCommentReplyListService(uid string, topicId st
 				return
 			}
 			for _, userInfo := range userInfos {
-				userInfoMap[*userInfo.UID] = *userInfo
-				redis.Set(constant.CommentUserListRedisKey+*userInfo.UID, userInfo, 24*time.Hour)
+				userInfoMap[userInfo.UID] = *userInfo
+				redis.Set(constant.CommentUserListRedisKey+userInfo.UID, userInfo, 24*time.Hour)
 			}
 		}
 	}()
@@ -279,13 +279,13 @@ func (CommentReplyServiceImpl) GetCommentReplyListService(uid string, topicId st
 				return
 			}
 			commentContent := CommentContent{
-				Avatar:          *userInfo.Avatar,
-				NickName:        *userInfo.Nickname,
+				Avatar:          userInfo.Avatar,
+				NickName:        userInfo.Nickname,
 				Id:              reply.Id,
 				UserId:          reply.UserId,
 				TopicId:         reply.TopicId,
 				Content:         reply.Content,
-				ReplyUsername:   *replyUserInfo.Nickname,
+				ReplyUsername:   replyUserInfo.Nickname,
 				ReplyCount:      reply.ReplyCount,
 				Likes:           reply.Likes,
 				CreatedTime:     reply.CreatedTime,
@@ -385,8 +385,8 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 				return
 			}
 			for _, userInfo := range userInfos {
-				userInfoMap[*userInfo.UID] = *userInfo
-				redis.Set(constant.CommentUserListRedisKey+*userInfo.UID, userInfo, 24*time.Hour)
+				userInfoMap[userInfo.UID] = *userInfo
+				redis.Set(constant.CommentUserListRedisKey+userInfo.UID, userInfo, 24*time.Hour)
 			}
 		}
 	}()
@@ -473,8 +473,8 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 				return
 			}
 			commentContent := CommentContent{
-				Avatar:          *userInfo.Avatar,
-				NickName:        *userInfo.Nickname,
+				Avatar:          userInfo.Avatar,
+				NickName:        userInfo.Nickname,
 				Id:              comment.Id,
 				UserId:          comment.UserId,
 				TopicId:         comment.TopicId,

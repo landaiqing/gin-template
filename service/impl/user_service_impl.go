@@ -25,10 +25,21 @@ var mu = &sync.Mutex{}
 
 // ResponseData 返回数据
 type ResponseData struct {
-	AccessToken  string  `json:"access_token"`
-	RefreshToken string  `json:"refresh_token"`
-	ExpiresAt    int64   `json:"expires_at"`
-	UID          *string `json:"uid"`
+	AccessToken  string   `json:"access_token"`
+	RefreshToken string   `json:"refresh_token"`
+	ExpiresAt    int64    `json:"expires_at"`
+	UID          *string  `json:"uid"`
+	UserInfo     UserInfo `json:"user_info"`
+}
+type UserInfo struct {
+	Username string    `json:"username,omitempty"`
+	Nickname string    `json:"nickname"`
+	Avatar   string    `json:"avatar"`
+	Phone    string    `json:"phone,omitempty"`
+	Email    string    `json:"email,omitempty"`
+	Gender   string    `json:"gender"`
+	Status   int64     `json:"status"`
+	CreateAt time.Time `json:"create_at"`
 }
 
 func (res ResponseData) MarshalBinary() ([]byte, error) {
@@ -115,13 +126,13 @@ func (UserServiceImpl) RefreshTokenService(refreshToken string) (*ResponseData, 
 // HandelUserLogin 处理用户登录
 func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) (*ResponseData, bool) {
 	// 检查 user.UID 是否为 nil
-	if user.UID == nil {
+	if user.UID == "" {
 		return nil, false
 	}
 	if !GetUserLoginDevice(user, c) {
 		return nil, false
 	}
-	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: user.UID})
+	accessToken, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: &user.UID})
 	if err != nil {
 		return nil, false
 	}
@@ -132,15 +143,25 @@ func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c
 		days = time.Minute * 30
 	}
 
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: user.UID}, days)
+	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &user.UID}, days)
 	data := ResponseData{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
-		UID:          user.UID,
+		UID:          &user.UID,
+		UserInfo: UserInfo{
+			Username: user.Username,
+			Nickname: user.Nickname,
+			Avatar:   user.Avatar,
+			Phone:    user.Phone,
+			Email:    user.Email,
+			Gender:   user.Gender,
+			Status:   user.Status,
+			CreateAt: *user.CreatedTime,
+		},
 	}
 
-	err = redis.Set(constant.UserLoginTokenRedisKey+*user.UID, data, days).Err()
+	err = redis.Set(constant.UserLoginTokenRedisKey+user.UID, data, days).Err()
 	if err != nil {
 		return nil, false
 	}
@@ -156,7 +177,7 @@ func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c
 func GetUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 
 	// 检查user.UID是否为空
-	if user.UID == nil {
+	if user.UID == "" {
 		global.LOG.Errorln("user.UID is nil")
 		return false
 	}
@@ -185,24 +206,24 @@ func GetUserLoginDevice(user model.ScaAuthUser, c *gin.Context) bool {
 
 	device := model.ScaAuthUserDevice{
 		UserID:          user.UID,
-		IP:              &ip,
-		Location:        &location,
+		IP:              ip,
+		Location:        location,
 		Agent:           userAgent,
-		Browser:         &browser,
-		BrowserVersion:  &browserVersion,
-		OperatingSystem: &os,
-		Mobile:          &mobile,
-		Bot:             &isBot,
-		Mozilla:         &mozilla,
-		Platform:        &platform,
-		EngineName:      &engine,
-		EngineVersion:   &engineVersion,
+		Browser:         browser,
+		BrowserVersion:  browserVersion,
+		OperatingSystem: os,
+		Mobile:          mobile,
+		Bot:             isBot,
+		Mozilla:         mozilla,
+		Platform:        platform,
+		EngineName:      engine,
+		EngineVersion:   engineVersion,
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
 
-	userDevice, err := userDeviceDao.GetUserDeviceByUIDIPAgent(*user.UID, ip, userAgent)
+	userDevice, err := userDeviceDao.GetUserDeviceByUIDIPAgent(user.UID, ip, userAgent)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		err = userDeviceDao.AddUserDevice(&device)
 		if err != nil {

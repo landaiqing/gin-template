@@ -169,6 +169,7 @@ func wechatLoginHandler(openId string, clientId string, c *gin.Context) bool {
 	if openId == "" {
 		return false
 	}
+
 	authUserSocial, err := userSocialService.QueryUserSocialByOpenIDService(openId, enum.OAuthSourceWechat)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		tx := global.DB.Begin()
@@ -180,107 +181,63 @@ func wechatLoginHandler(openId string, clientId string, c *gin.Context) bool {
 
 		uid := idgen.NextId()
 		uidStr := strconv.FormatInt(uid, 10)
-		avatar, err := utils.GenerateAvatar(uidStr)
+		avatar := utils.GenerateAvatar(uidStr)
 		name := randomname.GenerateName()
-		if err != nil {
-			global.LOG.Errorln(err)
-			return false
-		}
 		createUser := model.ScaAuthUser{
-			UID:      &uidStr,
-			Username: &openId,
-			Avatar:   &avatar,
-			Nickname: &name,
-			Gender:   &enum.Male,
+			UID:      uidStr,
+			Username: openId,
+			Avatar:   avatar,
+			Nickname: name,
+			Gender:   enum.Male,
 		}
 
-		// 异步添加用户
-		addUserChan := make(chan *model.ScaAuthUser, 1)
-		errChan := make(chan error, 1)
-		go func() {
-			addUser, err := userService.AddUserService(createUser)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			addUserChan <- addUser
-		}()
-
-		var addUser *model.ScaAuthUser
-		select {
-		case addUser = <-addUserChan:
-		case err := <-errChan:
+		// 添加用户
+		addUser, worn := userService.AddUserService(createUser)
+		if worn != nil {
 			tx.Rollback()
-			global.LOG.Error(err)
+			global.LOG.Error(worn)
 			return false
 		}
 
 		wechat := enum.OAuthSourceWechat
 		userSocial := model.ScaAuthUserSocial{
-			UserID: &uidStr,
-			OpenID: &openId,
-			Source: &wechat,
+			UserID: uidStr,
+			OpenID: openId,
+			Source: wechat,
 		}
 
-		// 异步添加用户社交信息
-		wrongChan := make(chan error, 1)
-		go func() {
-			wrong := userSocialService.AddUserSocialService(userSocial)
-			wrongChan <- wrong
-		}()
-
-		select {
-		case wrong := <-wrongChan:
-			if wrong != nil {
-				tx.Rollback()
-				global.LOG.Error(wrong)
-				return false
-			}
+		// 添加用户社交信息
+		if wrong := userSocialService.AddUserSocialService(userSocial); wrong != nil {
+			tx.Rollback()
+			global.LOG.Error(wrong)
+			return false
 		}
 
-		// 异步添加角色
-		roleErrChan := make(chan error, 1)
-		go func() {
-			_, err := global.Casbin.AddRoleForUser(uidStr, enum.User)
-			roleErrChan <- err
-		}()
-
-		select {
-		case err := <-roleErrChan:
-			if err != nil {
-				tx.Rollback()
-				global.LOG.Error(err)
-				return false
-			}
+		// 添加角色
+		if _, err = global.Casbin.AddRoleForUser(uidStr, enum.User); err != nil {
+			tx.Rollback()
+			global.LOG.Error(err)
+			return false
 		}
 
-		// 异步处理用户登录
-		resChan := make(chan bool, 1)
-		go func() {
-			res := handelUserLogin(*addUser.UID, clientId, c)
-			resChan <- res
-		}()
-
-		select {
-		case res := <-resChan:
-			if !res {
-				tx.Rollback()
-				return false
-			}
+		// 处理用户登录
+		if res := handelUserLogin(addUser.UID, clientId, c); !res {
+			tx.Rollback()
+			return false
 		}
+
 		tx.Commit()
 		return true
 	} else {
-		res := handelUserLogin(*authUserSocial.UserID, clientId, c)
-		if !res {
-			return false
-		}
-		return true
+		res := handelUserLogin(authUserSocial.UserID, clientId, c)
+		return res
 	}
 }
 
 // handelUserLogin 处理用户登录
 func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
+
+	user := userService.QueryUserByUuidService(&userId)
 	resultChan := make(chan bool, 1)
 
 	go func() {
@@ -295,6 +252,16 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			RefreshToken: refreshToken,
 			ExpiresAt:    expiresAt,
 			UID:          &userId,
+			UserInfo: UserInfo{
+				Username: user.Username,
+				Nickname: user.Nickname,
+				Avatar:   user.Avatar,
+				Gender:   user.Gender,
+				Phone:    user.Phone,
+				Email:    user.Email,
+				CreateAt: *user.CreatedTime,
+				Status:   user.Status,
+			},
 		}
 		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, data, time.Hour*24*7).Err()
 		if fail != nil {
