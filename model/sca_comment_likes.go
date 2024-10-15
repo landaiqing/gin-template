@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 const ScaCommentLikesTableName = "sca_comment_likes"
 

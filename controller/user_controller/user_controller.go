@@ -249,7 +249,7 @@ func (UserController) RefreshHandler(c *gin.Context) {
 	}
 	data, res := userService.RefreshTokenService(request.RefreshToken)
 	if !res {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "LoginExpired"), c)
+		result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
 	}
 	result.OkWithData(data, c)

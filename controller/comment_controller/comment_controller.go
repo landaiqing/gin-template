@@ -62,7 +62,12 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 	if commentRequest.UserID == commentRequest.Author {
 		isAuthor = 1
 	}
-	commentContent := global.SensitiveManager.Replace(commentRequest.Content, '*')
+	xssFilterContent := utils.XssFilter(commentRequest.Content)
+	if xssFilterContent == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+		return
+	}
+	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
 		UserId:          commentRequest.UserID,
@@ -131,7 +136,12 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 	if replyCommentRequest.UserID == replyCommentRequest.Author {
 		isAuthor = 1
 	}
-	commentContent := global.SensitiveManager.Replace(replyCommentRequest.Content, '*')
+	xssFilterContent := utils.XssFilter(replyCommentRequest.Content)
+	if xssFilterContent == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+		return
+	}
+	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
 		UserId:          replyCommentRequest.UserID,
@@ -202,7 +212,12 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 	if replyReplyRequest.UserID == replyReplyRequest.Author {
 		isAuthor = 1
 	}
-	commentContent := global.SensitiveManager.Replace(replyReplyRequest.Content, '*')
+	xssFilterContent := utils.XssFilter(replyReplyRequest.Content)
+	if xssFilterContent == "" {
+		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
+		return
+	}
+	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
 		UserId:          replyReplyRequest.UserID,
