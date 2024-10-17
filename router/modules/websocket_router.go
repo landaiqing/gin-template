@@ -5,12 +5,13 @@ import (
 	"schisandra-cloud-album/controller"
 )
 
-var websocketAPI = controller.Controller.WebsocketController
+var qrWebsocketAPI = controller.Controller.QrWebsocketController
+var messageWebsocketAPI = controller.Controller.MessageWebsocketController
 
 func WebsocketRouter(router *gin.RouterGroup) {
 	group := router.Group("/ws")
 	{
-		group.GET("/gws", websocketAPI.NewGWSServer)
+		group.GET("/qr_ws", qrWebsocketAPI.QrWebsocket)
+		group.GET("/message_ws", messageWebsocketAPI.MessageWSController)
 	}
-
 }

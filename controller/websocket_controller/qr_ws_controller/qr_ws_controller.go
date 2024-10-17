@@ -1,7 +1,6 @@
-package websocket_controller
+package qr_ws_controller
 
 import (
-	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/lxzan/gws"
@@ -9,10 +8,11 @@ import (
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/global"
+	"schisandra-cloud-album/utils"
 	"time"
 )
 
-type WebsocketController struct {
+type QrWebsocketController struct {
 }
 
 const (
@@ -27,12 +27,12 @@ type WebSocket struct {
 
 var Handler = NewWebSocket()
 
-// NewGWSServer 创建websocket服务
+// QrWebsocket 创建websocket服务
 // @Summary 创建websocket服务
 // @Description 创建websocket服务
 // @Tags websocket
 // @Router /controller/ws/gws [get]
-func (WebsocketController) NewGWSServer(c *gin.Context) {
+func (QrWebsocketController) QrWebsocket(c *gin.Context) {
 
 	upgrader := gws.NewUpgrader(Handler, &gws.ServerOption{
 		HandshakeTimeout: 5 * time.Second, // 握手超时时间
@@ -50,6 +50,11 @@ func (WebsocketController) NewGWSServer(c *gin.Context) {
 			}
 			var clientId = r.URL.Query().Get("client_id")
 			if clientId == "" {
+				return false
+			}
+			ip := utils.GetClientIP(c)
+			exists := redis.Get(constant.UserLoginClientRedisKey + ip).Val()
+			if clientId != exists {
 				return false
 			}
 			session.Store("client_id", clientId)
@@ -84,9 +89,7 @@ func NewWebSocket() *WebSocket {
 func (c *WebSocket) OnOpen(socket *gws.Conn) {
 	clientId := MustLoad[string](socket.Session(), "client_id")
 	c.sessions.Store(clientId, socket)
-	// 订阅该用户的频道
-	go c.subscribeUserChannel(clientId)
-	fmt.Printf("websocket client %s connected\n", clientId)
+	//fmt.Printf("websocket client %s connected\n", clientId)
 }
 
 // OnClose 关闭连接
@@ -97,7 +100,7 @@ func (c *WebSocket) OnClose(socket *gws.Conn, err error) {
 	sharding.Lock()
 	defer sharding.Unlock()
 
-	global.LOG.Printf("onerror, name=%s, msg=%s\n", name, err.Error())
+	//global.LOG.Printf("onerror, name=%s, msg=%s\n", name, err.Error())
 }
 
 // OnPing 处理客户端的Ping消息
@@ -125,61 +128,4 @@ func (c *WebSocket) SendMessageToClient(clientId string, message []byte) error {
 		return conn.WriteMessage(gws.OpcodeText, message)
 	}
 	return fmt.Errorf("client %s not found", clientId)
-}
-
-// SendMessageToUser 发送消息到指定用户的 Redis 频道
-func (c *WebSocket) SendMessageToUser(clientId string, message []byte) error {
-	if _, ok := c.sessions.Load(clientId); ok {
-		return redis.Publish(clientId, message).Err()
-	} else {
-		return redis.LPush(constant.CommentOfflineMessageRedisKey+clientId, message).Err()
-	}
-}
-
-// 订阅用户频道
-func (c *WebSocket) subscribeUserChannel(clientId string) {
-	conn, ok := c.sessions.Load(clientId)
-	if !ok {
-		return
-	}
-
-	// 获取离线消息
-	messages, err := redis.LRange(constant.CommentOfflineMessageRedisKey+clientId, 0, -1).Result()
-	if err != nil {
-		global.LOG.Printf("Error loading offline messages for user %s: %v\n", clientId, err)
-		return
-	}
-
-	// 逐条发送离线消息
-	for _, msg := range messages {
-		if writeErr := conn.WriteMessage(gws.OpcodeText, []byte(msg)); writeErr != nil {
-			global.LOG.Printf("Error writing offline message to user %s: %v\n", clientId, writeErr)
-			return
-		}
-	}
-
-	// 清空离线消息列表
-	if delErr := redis.Del(constant.CommentOfflineMessageRedisKey + clientId); delErr.Err() != nil {
-		global.LOG.Printf("Error clearing offline messages for user %s: %v\n", clientId, delErr.Err())
-	}
-
-	pubsub := redis.Subscribe(clientId)
-	defer func() {
-		if closeErr := pubsub.Close(); closeErr != nil {
-			global.LOG.Printf("Error closing pubsub for user %s: %v\n", clientId, closeErr)
-		}
-	}()
-
-	for {
-		msg, waitErr := pubsub.ReceiveMessage(context.Background())
-		if waitErr != nil {
-			global.LOG.Printf("Error receiving message for user %s: %v\n", clientId, err)
-			return
-		}
-
-		if writeErr := conn.WriteMessage(gws.OpcodeText, []byte(msg.Payload)); writeErr != nil {
-			global.LOG.Printf("Error writing message to user %s: %v\n", clientId, writeErr)
-			return
-		}
-	}
 }

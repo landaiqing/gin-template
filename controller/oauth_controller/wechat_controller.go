@@ -19,7 +19,7 @@ import (
 	"schisandra-cloud-album/common/randomname"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
-	"schisandra-cloud-album/controller/websocket_controller"
+	"schisandra-cloud-album/controller/websocket_controller/qr_ws_controller"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/utils"
@@ -286,7 +286,7 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			return
 		}
 		// gws方式发送消息
-		err = websocket_controller.Handler.SendMessageToClient(clientId, tokenData)
+		err = qr_ws_controller.Handler.SendMessageToClient(clientId, tokenData)
 		if err != nil {
 			global.LOG.Error(err)
 			resultChan <- false
