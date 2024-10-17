@@ -11,7 +11,7 @@ import (
 	"github.com/wenlng/go-captcha/v2/click"
 	"github.com/wenlng/go-captcha/v2/rotate"
 	"github.com/wenlng/go-captcha/v2/slide"
-	go_sensitive_word "github.com/zmexing/go-sensitive-word"
+	"github.com/zmexing/go-sensitive-word"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"schisandra-cloud-album/config"

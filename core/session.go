@@ -21,10 +21,11 @@ func InitSession(client *redis.Client) {
 	store.Options(sessions.Options{
 		Path: "/",
 		//Domain: global.CONFIG.System.Web,
-		MaxAge:   86400 * 7,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		MaxAge:      86400 * 7,
+		HttpOnly:    true,
+		Secure:      true,
+		Partitioned: true,
+		SameSite:    http.SameSiteLaxMode,
 	})
 	global.Session = store
 }
