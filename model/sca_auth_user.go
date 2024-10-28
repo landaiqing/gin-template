@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -41,4 +42,17 @@ func (user *ScaAuthUser) MarshalBinary() ([]byte, error) {
 
 func (user *ScaAuthUser) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, user)
+}
+func (user *ScaAuthUser) BeforeCreate(tx *gorm.DB) (err error) {
+	user.CreatedBy = "system"
+	return
+}
+
+func (user *ScaAuthUser) BeforeUpdate(tx *gorm.DB) (err error) {
+	currentUserID, b := tx.Get("user_id")
+	if !b {
+		return
+	}
+	user.UpdateBy = currentUserID.(string)
+	return
 }

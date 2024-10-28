@@ -27,9 +27,9 @@ type WebSocket struct {
 
 var Handler = NewWebSocket()
 
-// QrWebsocket 创建websocket服务
-// @Summary 创建websocket服务
-// @Description 创建websocket服务
+// QrWebsocket 登录websocket服务
+// @Summary 登录websocket服务
+// @Description  登录websocket服务
 // @Tags websocket
 // @Router /controller/ws/gws [get]
 func (QrWebsocketController) QrWebsocket(c *gin.Context) {

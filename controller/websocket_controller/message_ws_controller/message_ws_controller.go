@@ -3,14 +3,16 @@ package message_ws_controller
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lxzan/gws"
-	"net/http"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
-	"time"
 )
 
 type MessageWebsocketController struct {
@@ -28,9 +30,9 @@ type WebSocket struct {
 
 var MessageHandler = MessageWebSocket()
 
-// MessageWSController 创建websocket服务
-// @Summary 创建websocket服务
-// @Description 创建websocket服务
+// MessageWSController 消息通知websocket服务
+// @Summary 消息通知websocket服务
+// @Description 消息通知websocket服务
 // @Tags websocket
 // @Router /controller/ws/gws [get]
 func (MessageWebsocketController) MessageWSController(c *gin.Context) {
@@ -94,7 +96,7 @@ func (c *WebSocket) OnOpen(socket *gws.Conn) {
 	c.sessions.Store(clientId, socket)
 	// 订阅该用户的频道
 	go c.subscribeUserChannel(clientId)
-	//fmt.Printf("websocket client %s connected\n", clientId)
+	// fmt.Printf("websocket client %s connected\n", clientId)
 }
 
 // OnClose 关闭连接
@@ -105,7 +107,7 @@ func (c *WebSocket) OnClose(socket *gws.Conn, err error) {
 	sharding.Lock()
 	defer sharding.Unlock()
 
-	//global.LOG.Printf("onerror, name=%s, msg=%s\n", name, err.Error())
+	// global.LOG.Printf("onerror, name=%s, msg=%s\n", name, err.Error())
 }
 
 // OnPing 处理客户端的Ping消息

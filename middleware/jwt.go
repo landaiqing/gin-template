@@ -73,6 +73,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Set("userId", parseToken.UserID)
+		global.DB.Set("user_id", parseToken.UserID) // 全局变量中设置用户ID
 		c.Next()
 	}
 }
