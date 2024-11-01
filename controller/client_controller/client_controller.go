@@ -1,15 +1,17 @@
 package client_controller
 
 import (
+	"sync"
+	"time"
+
+	"github.com/ccpwcn/kgo"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
-	"sync"
-	"time"
 )
 
 type ClientController struct{}
@@ -36,16 +38,12 @@ func (ClientController) GenerateClientId(c *gin.Context) {
 		return
 	}
 	// 生成新的客户端ID
-	uid, err := uuid.NewUUID()
+	simpleUuid := kgo.SimpleUuid()
+	err := redis.Set(constant.UserLoginClientRedisKey+ip, simpleUuid, time.Hour*24*7).Err()
 	if err != nil {
 		global.LOG.Error(err)
 		return
 	}
-	err = redis.Set(constant.UserLoginClientRedisKey+ip, uid.String(), time.Hour*24*7).Err()
-	if err != nil {
-		global.LOG.Error(err)
-		return
-	}
-	result.OkWithData(uid.String(), c)
+	result.OkWithData(simpleUuid, c)
 	return
 }

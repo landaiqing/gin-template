@@ -1,18 +1,20 @@
 package sms_controller
 
 import (
+	"time"
+
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	gosms "github.com/pkg6/go-sms"
 	"github.com/pkg6/go-sms/gateways"
 	"github.com/pkg6/go-sms/gateways/aliyun"
 	"github.com/pkg6/go-sms/gateways/smsbao"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
-	"time"
 )
 
 type SmsController struct{}
@@ -62,7 +64,7 @@ func (SmsController) SendMessageByAli(c *gin.Context) {
 	_, err = sms.Send(smsRequest.Phone, gosms.MapStringAny{
 		"content":  "您的验证码是：****。请不要把验证码泄露给其他人。",
 		"template": global.CONFIG.SMS.Ali.TemplateID,
-		//"signName": global.CONFIG.SMS.Ali.Signature,
+		// "signName": global.CONFIG.SMS.Ali.Signature,
 		"data": gosms.MapStrings{
 			"code": code,
 		},

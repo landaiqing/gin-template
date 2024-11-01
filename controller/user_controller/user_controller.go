@@ -2,12 +2,16 @@ package user_controller
 
 import (
 	"errors"
+	"reflect"
+	"strconv"
+	"sync"
+
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
-	"reflect"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/randomname"
@@ -17,8 +21,6 @@ import (
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/service/impl"
 	"schisandra-cloud-album/utils"
-	"strconv"
-	"sync"
 )
 
 type UserController struct{}
@@ -111,7 +113,7 @@ func (UserController) AccountLogin(c *gin.Context) {
 	accountLoginRequest := AccountLoginRequest{}
 	err := c.ShouldBindJSON(&accountLoginRequest)
 	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		global.LOG.Error(err)
 		return
 	}
 	rotateData := utils.CheckRotateData(accountLoginRequest.Angle, accountLoginRequest.Key)
@@ -161,7 +163,7 @@ func (UserController) PhoneLogin(c *gin.Context) {
 	request := PhoneLoginRequest{}
 	err := c.ShouldBind(&request)
 	if err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		global.LOG.Error(err)
 		return
 	}
 	phone := request.Phone
@@ -244,7 +246,7 @@ func (UserController) PhoneLogin(c *gin.Context) {
 func (UserController) RefreshHandler(c *gin.Context) {
 	request := RefreshTokenRequest{}
 	if err := c.ShouldBindJSON(&request); err != nil {
-		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
+		global.LOG.Error(err)
 		return
 	}
 	data, res := userService.RefreshTokenService(request.RefreshToken)
