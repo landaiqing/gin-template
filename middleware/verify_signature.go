@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	ginI18n "github.com/gin-contrib/i18n"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
+
+	ginI18n "github.com/gin-contrib/i18n"
+	"github.com/gin-gonic/gin"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
-	"strconv"
-	"time"
 )
 
 func VerifySignature() gin.HandlerFunc {

@@ -2,14 +2,16 @@ package middleware
 
 import (
 	"encoding/json"
+	"strings"
+
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
-	"strings"
 )
 
 type TokenData struct {
@@ -21,7 +23,7 @@ type TokenData struct {
 
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 默认双Token放在请求头Authorization的Bearer中，并以空格隔开
+		// 默认Token放在请求头Authorization的Bearer中，并以空格隔开
 		authHeader := c.GetHeader(global.CONFIG.JWT.HeaderKey)
 		if authHeader == "" {
 			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
@@ -40,17 +42,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		parseToken, isUpd, err := utils.ParseAccessToken(accessToken)
 		if err != nil || !isUpd {
 			result.FailWithCodeAndMessage(401, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
-			c.Abort()
-			return
-		}
-		uid := c.GetHeader("X-UID")
-		if uid == "" {
-			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
-			c.Abort()
-			return
-		}
-		if *parseToken.UserID != uid {
-			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
 			c.Abort()
 			return
 		}

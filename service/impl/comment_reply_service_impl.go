@@ -5,9 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/acmestack/gorm-plus/gplus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/redis"
@@ -16,9 +21,6 @@ import (
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/mq"
 	"schisandra-cloud-album/utils"
-	"strconv"
-	"sync"
-	"time"
 )
 
 var commentReplyDao = impl.CommentReplyDaoImpl{}
@@ -404,17 +406,17 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 				}
 				likeMap[commentId] = exists // `exists` 为 true 则表示已点赞，false 则表示未点赞
 			}
-			//queryLike, l := gplus.NewQuery[model.ScaCommentLikes]()
-			//queryLike.Eq(&l.TopicId, topicId).Eq(&l.UserId, uid).In(&l.CommentId, commentIds)
-			//likes, likesDB := gplus.SelectList(queryLike)
-			//if likesDB.Error != nil {
+			// queryLike, l := gplus.NewQuery[model.ScaCommentLikes]()
+			// queryLike.Eq(&l.TopicId, topicId).Eq(&l.UserId, uid).In(&l.CommentId, commentIds)
+			// likes, likesDB := gplus.SelectList(queryLike)
+			// if likesDB.Error != nil {
 			//	global.LOG.Errorln(likesDB.Error)
 			//	return
-			//}
-			//for _, like := range likes {
+			// }
+			// for _, like := range likes {
 			//	likeMap[like.CommentId] = true
 			//	_ = redis.SAdd(redisKey, like.CommentId)
-			//}
+			// }
 
 		}
 	}()

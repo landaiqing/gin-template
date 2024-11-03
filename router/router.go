@@ -1,12 +1,14 @@
 package router
 
 import (
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/middleware"
 	"schisandra-cloud-album/router/modules"
-	"time"
 )
 
 func InitRouter() *gin.Engine {
@@ -22,7 +24,7 @@ func InitRouter() *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{global.CONFIG.System.WebURL()},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language", "X-Sign", "X-Timestamp", "X-Nonce", "X-UID"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept-Language", "X-Sign", "X-Timestamp", "X-Nonce"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
