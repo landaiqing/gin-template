@@ -1,8 +1,9 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const ScaCommentReplyTable = "sca_comment_reply"
@@ -30,7 +31,6 @@ type ScaCommentReply struct {
 	Location        string    `gorm:"column:location;type:varchar(20);comment:评论地址" json:"location"`
 	Browser         string    `gorm:"column:browser;type:varchar(20);comment:评论浏览器" json:"browser"`
 	OperatingSystem string    `gorm:"column:operating_system;type:varchar(20);comment:评论操作系统" json:"operating_system"`
-	CommentOrder    int64     `gorm:"column:comment_order;type:bigint(20);default:0;comment:评论排序" json:"-"`
 	Agent           string    `gorm:"column:agent;type:varchar(255);comment:客户端设备信息" json:"agent"`
 }
 

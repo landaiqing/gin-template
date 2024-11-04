@@ -1,9 +1,12 @@
 package comment_controller
 
 import (
+	"time"
+
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
+
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -81,12 +84,23 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	response := commentReplyService.SubmitCommentService(&commentReply, commentRequest.TopicId, commentRequest.UserID, commentRequest.Images)
+	commentId, response := commentReplyService.SubmitCommentService(&commentReply, commentRequest.TopicId, commentRequest.UserID, commentRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
 	}
-	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
+	responseData := model.ScaCommentReply{
+		Id:              commentId,
+		Content:         commentContent,
+		UserId:          commentRequest.UserID,
+		TopicId:         commentRequest.TopicId,
+		Author:          isAuthor,
+		Location:        location,
+		Browser:         browser,
+		OperatingSystem: operatingSystem,
+		CreatedTime:     time.Now(),
+	}
+	result.OkWithData(responseData, c)
 	return
 }
 
@@ -157,12 +171,25 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	response := commentReplyService.SubmitCommentService(&commentReply, replyCommentRequest.TopicId, replyCommentRequest.UserID, replyCommentRequest.Images)
+	commentReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyCommentRequest.TopicId, replyCommentRequest.UserID, replyCommentRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
 	}
-	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
+	responseData := model.ScaCommentReply{
+		Id:              commentReplyId,
+		Content:         commentContent,
+		UserId:          replyCommentRequest.UserID,
+		TopicId:         replyCommentRequest.TopicId,
+		ReplyId:         replyCommentRequest.ReplyId,
+		ReplyUser:       replyCommentRequest.ReplyUser,
+		Author:          isAuthor,
+		Location:        location,
+		Browser:         browser,
+		OperatingSystem: operatingSystem,
+		CreatedTime:     time.Now(),
+	}
+	result.OkWithData(responseData, c)
 	return
 }
 
@@ -234,12 +261,26 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	response := commentReplyService.SubmitCommentService(&commentReply, replyReplyRequest.TopicId, replyReplyRequest.UserID, replyReplyRequest.Images)
+	commentReplyReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyReplyRequest.TopicId, replyReplyRequest.UserID, replyReplyRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
 	}
-	result.OkWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitSuccess"), c)
+	responseData := model.ScaCommentReply{
+		Id:              commentReplyReplyId,
+		Content:         commentContent,
+		UserId:          replyReplyRequest.UserID,
+		TopicId:         replyReplyRequest.TopicId,
+		ReplyTo:         replyReplyRequest.ReplyTo,
+		ReplyId:         replyReplyRequest.ReplyId,
+		ReplyUser:       replyReplyRequest.ReplyUser,
+		Author:          isAuthor,
+		Location:        location,
+		Browser:         browser,
+		OperatingSystem: operatingSystem,
+		CreatedTime:     time.Now(),
+	}
+	result.OkWithData(responseData, c)
 	return
 }
 

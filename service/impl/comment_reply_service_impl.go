@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -80,7 +81,7 @@ type LikeData struct {
 }
 
 // SubmitCommentService 提交评论
-func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentReply, topicId string, uid string, images []string) bool {
+func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentReply, topicId string, uid string, images []string) (int64, bool) {
 	tx := global.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -91,14 +92,14 @@ func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentRep
 	err := commentReplyDao.CreateCommentReply(comment)
 	if err != nil {
 		global.LOG.Errorln(err)
-		return false
+		return 0, false
 	}
 	if comment.ReplyId != 0 {
 		err = commentReplyDao.UpdateCommentReplyCount(comment.ReplyId)
 		if err != nil {
 			global.LOG.Errorln(err)
 			tx.Rollback()
-			return false
+			return 0, false
 		}
 	}
 
@@ -117,7 +118,7 @@ func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentRep
 		imagesData := <-imagesDataCh
 		if imagesData == nil {
 			tx.Rollback()
-			return false
+			return 0, false
 		}
 
 		commentImages := CommentImages{
@@ -136,7 +137,7 @@ func (CommentReplyServiceImpl) SubmitCommentService(comment *model.ScaCommentRep
 		}()
 	}
 	tx.Commit()
-	return true
+	return comment.Id, true
 }
 
 // GetCommentReplyListService 获取评论回复列表
@@ -330,9 +331,9 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 	query, u := gplus.NewQuery[model.ScaCommentReply]()
 	page := gplus.NewPage[model.ScaCommentReply](pageNum, size)
 	if isHot {
-		query.OrderByDesc(&u.CommentOrder).OrderByDesc(&u.Likes).OrderByDesc(&u.ReplyCount)
+		query.OrderByDesc(&u.Likes).OrderByDesc(&u.ReplyCount)
 	} else {
-		query.OrderByDesc(&u.CommentOrder).OrderByDesc(&u.CreatedTime)
+		query.OrderByDesc(&u.CreatedTime)
 	}
 	query.Eq(&u.TopicId, topicId).Eq(&u.CommentType, enum.COMMENT)
 	page, pageDB := gplus.SelectPage(page, query)
@@ -504,7 +505,12 @@ func (CommentReplyServiceImpl) GetCommentListService(uid string, topicId string,
 	for commentContent := range commentChannel {
 		commentsWithImages = append(commentsWithImages, commentContent)
 	}
-
+	// 根据CreatedTime进行排序，如果isHot为false
+	if !isHot {
+		sort.Slice(commentsWithImages, func(i, j int) bool {
+			return commentsWithImages[i].CreatedTime.After(commentsWithImages[j].CreatedTime)
+		})
+	}
 	response := CommentResponse{
 		Comments: commentsWithImages,
 		Size:     page.Size,
