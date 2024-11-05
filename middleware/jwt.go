@@ -10,16 +10,10 @@ import (
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
+	"schisandra-cloud-album/common/types"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/utils"
 )
-
-type TokenData struct {
-	AccessToken  string  `json:"access_token"`
-	RefreshToken string  `json:"refresh_token"`
-	ExpiresAt    int64   `json:"expires_at"`
-	UID          *string `json:"uid"`
-}
 
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -51,7 +45,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		tokenResult := TokenData{}
+		tokenResult := types.RedisToken{}
 		err = json.Unmarshal([]byte(token), &tokenResult)
 		if err != nil {
 			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
@@ -63,7 +57,13 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("userId", parseToken.UserID)
+		uid := utils.GetSession(c, constant.SessionKey).UID
+		if uid != *parseToken.UserID {
+			result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "AuthVerifyExpired"), c)
+			c.Abort()
+			return
+		}
+		c.Set("user_id", parseToken.UserID)
 		global.DB.Set("user_id", parseToken.UserID) // 全局变量中设置用户ID
 		c.Next()
 	}

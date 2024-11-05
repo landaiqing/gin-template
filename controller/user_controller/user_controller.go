@@ -4,7 +4,6 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
-	"sync"
 
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
@@ -25,7 +24,6 @@ import (
 
 type UserController struct{}
 
-var mu sync.Mutex
 var userService = impl.UserServiceImpl{}
 var userDeviceService = impl.UserDeviceServiceImpl{}
 
@@ -244,12 +242,8 @@ func (UserController) PhoneLogin(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /controller/token/refresh [post]
 func (UserController) RefreshHandler(c *gin.Context) {
-	request := RefreshTokenRequest{}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		global.LOG.Error(err)
-		return
-	}
-	data, res := userService.RefreshTokenService(request.RefreshToken)
+	session := utils.GetSession(c, constant.SessionKey)
+	data, res := userService.RefreshTokenService(c, session.RefreshToken)
 	if !res {
 		result.FailWithCodeAndMessage(403, ginI18n.MustGetMessage(c, "LoginExpired"), c)
 		return
@@ -343,7 +337,7 @@ func (UserController) ResetPassword(c *gin.Context) {
 // @Success 200 {string} json
 // @Router /controller/auth/user/logout [post]
 func (UserController) Logout(c *gin.Context) {
-	userId := c.Query("user_id")
+	userId := utils.GetSession(c, constant.SessionKey).UID
 	if userId == "" {
 		global.LOG.Errorln("userId is empty")
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
@@ -371,7 +365,7 @@ func (UserController) Logout(c *gin.Context) {
 
 // GetUserLoginDevice 获取用户登录设备
 func (UserController) GetUserLoginDevice(c *gin.Context) {
-	userId := c.Query("user_id")
+	userId := utils.GetSession(c, constant.SessionKey).UID
 	if userId == "" {
 		return
 	}

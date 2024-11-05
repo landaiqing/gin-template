@@ -52,7 +52,6 @@ func InitRouter() *gin.Engine {
 		middleware.SecurityHeaders(),
 		middleware.JWTAuthMiddleware(),
 		middleware.CasbinMiddleware(),
-		middleware.SessionCheckMiddleware(),
 		middleware.VerifySignature(),
 	)
 	{

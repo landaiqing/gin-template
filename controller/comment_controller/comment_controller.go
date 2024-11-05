@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
 
+	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
@@ -62,7 +63,8 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 	browser, _ := ua.Browser()
 	operatingSystem := ua.OS()
 	isAuthor := 0
-	if commentRequest.UserID == commentRequest.Author {
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	if uid == commentRequest.Author {
 		isAuthor = 1
 	}
 	xssFilterContent := utils.XssFilter(commentRequest.Content)
@@ -71,9 +73,10 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 		return
 	}
 	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
+
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
-		UserId:          commentRequest.UserID,
+		UserId:          uid,
 		TopicId:         commentRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
 		CommentType:     enum.COMMENT,
@@ -84,7 +87,7 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	commentId, response := commentReplyService.SubmitCommentService(&commentReply, commentRequest.TopicId, commentRequest.UserID, commentRequest.Images)
+	commentId, response := commentReplyService.SubmitCommentService(&commentReply, commentRequest.TopicId, uid, commentRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
@@ -92,7 +95,7 @@ func (CommentController) CommentSubmit(c *gin.Context) {
 	responseData := model.ScaCommentReply{
 		Id:              commentId,
 		Content:         commentContent,
-		UserId:          commentRequest.UserID,
+		UserId:          uid,
 		TopicId:         commentRequest.TopicId,
 		Author:          isAuthor,
 		Location:        location,
@@ -147,7 +150,8 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 	browser, _ := ua.Browser()
 	operatingSystem := ua.OS()
 	isAuthor := 0
-	if replyCommentRequest.UserID == replyCommentRequest.Author {
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	if uid == replyCommentRequest.Author {
 		isAuthor = 1
 	}
 	xssFilterContent := utils.XssFilter(replyCommentRequest.Content)
@@ -158,7 +162,7 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
-		UserId:          replyCommentRequest.UserID,
+		UserId:          uid,
 		TopicId:         replyCommentRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
 		CommentType:     enum.REPLY,
@@ -171,7 +175,7 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	commentReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyCommentRequest.TopicId, replyCommentRequest.UserID, replyCommentRequest.Images)
+	commentReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyCommentRequest.TopicId, uid, replyCommentRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
@@ -179,7 +183,7 @@ func (CommentController) ReplySubmit(c *gin.Context) {
 	responseData := model.ScaCommentReply{
 		Id:              commentReplyId,
 		Content:         commentContent,
-		UserId:          replyCommentRequest.UserID,
+		UserId:          uid,
 		TopicId:         replyCommentRequest.TopicId,
 		ReplyId:         replyCommentRequest.ReplyId,
 		ReplyUser:       replyCommentRequest.ReplyUser,
@@ -236,7 +240,8 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 	browser, _ := ua.Browser()
 	operatingSystem := ua.OS()
 	isAuthor := 0
-	if replyReplyRequest.UserID == replyReplyRequest.Author {
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	if uid == replyReplyRequest.Author {
 		isAuthor = 1
 	}
 	xssFilterContent := utils.XssFilter(replyReplyRequest.Content)
@@ -247,7 +252,7 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 	commentContent := global.SensitiveManager.Replace(xssFilterContent, '*')
 	commentReply := model.ScaCommentReply{
 		Content:         commentContent,
-		UserId:          replyReplyRequest.UserID,
+		UserId:          uid,
 		TopicId:         replyReplyRequest.TopicId,
 		TopicType:       enum.CommentTopicType,
 		CommentType:     enum.REPLY,
@@ -261,7 +266,7 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 		OperatingSystem: operatingSystem,
 		Agent:           userAgent,
 	}
-	commentReplyReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyReplyRequest.TopicId, replyReplyRequest.UserID, replyReplyRequest.Images)
+	commentReplyReplyId, response := commentReplyService.SubmitCommentService(&commentReply, replyReplyRequest.TopicId, uid, replyReplyRequest.Images)
 	if !response {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentSubmitFailed"), c)
 		return
@@ -269,7 +274,7 @@ func (CommentController) ReplyReplySubmit(c *gin.Context) {
 	responseData := model.ScaCommentReply{
 		Id:              commentReplyReplyId,
 		Content:         commentContent,
-		UserId:          replyReplyRequest.UserID,
+		UserId:          uid,
 		TopicId:         replyReplyRequest.TopicId,
 		ReplyTo:         replyReplyRequest.ReplyTo,
 		ReplyId:         replyReplyRequest.ReplyId,
@@ -299,7 +304,8 @@ func (CommentController) CommentList(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	response := commentReplyService.GetCommentListService(commentListRequest.UserID, commentListRequest.TopicId, commentListRequest.Page, commentListRequest.Size, commentListRequest.IsHot)
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	response := commentReplyService.GetCommentListService(uid, commentListRequest.TopicId, commentListRequest.Page, commentListRequest.Size, commentListRequest.IsHot)
 	result.OkWithData(response, c)
 	return
 }
@@ -319,7 +325,8 @@ func (CommentController) ReplyList(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	response := commentReplyService.GetCommentReplyListService(replyListRequest.UserID, replyListRequest.TopicId, replyListRequest.CommentId, replyListRequest.Page, replyListRequest.Size)
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	response := commentReplyService.GetCommentReplyListService(uid, replyListRequest.TopicId, replyListRequest.CommentId, replyListRequest.Page, replyListRequest.Size)
 	result.OkWithData(response, c)
 	return
 }
@@ -339,7 +346,8 @@ func (CommentController) CommentLikes(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	res := commentReplyService.CommentLikeService(likeRequest.UserID, likeRequest.CommentId, likeRequest.TopicId)
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	res := commentReplyService.CommentLikeService(uid, likeRequest.CommentId, likeRequest.TopicId)
 	if !res {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentLikeFailed"), c)
 		return
@@ -362,7 +370,8 @@ func (CommentController) CancelCommentLikes(c *gin.Context) {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "ParamsError"), c)
 		return
 	}
-	res := commentReplyService.CommentDislikeService(cancelLikeRequest.UserID, cancelLikeRequest.CommentId, cancelLikeRequest.TopicId)
+	uid := utils.GetSession(c, constant.SessionKey).UID
+	res := commentReplyService.CommentDislikeService(uid, cancelLikeRequest.CommentId, cancelLikeRequest.TopicId)
 	if !res {
 		result.FailWithMessage(ginI18n.MustGetMessage(c, "CommentDislikeFailed"), c)
 		return

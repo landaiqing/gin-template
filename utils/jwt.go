@@ -33,7 +33,7 @@ func GenerateAccessToken(payload AccessJWTPayload) (string, error) {
 	claims := AccessJWTClaims{
 		AccessJWTPayload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -52,7 +52,7 @@ func GenerateAccessToken(payload AccessJWTPayload) (string, error) {
 }
 
 // GenerateRefreshToken generates a JWT token with the given payload, and returns the accessToken and refreshToken
-func GenerateRefreshToken(payload RefreshJWTPayload, days time.Duration) (string, int64) {
+func GenerateRefreshToken(payload RefreshJWTPayload, days time.Duration) string {
 	MySecret = []byte(global.CONFIG.JWT.Secret)
 	refreshClaims := RefreshJWTClaims{
 		RefreshJWTPayload: payload,
@@ -67,14 +67,14 @@ func GenerateRefreshToken(payload RefreshJWTPayload, days time.Duration) (string
 	refreshTokenString, err := refreshToken.SignedString(MySecret)
 	if err != nil {
 		global.LOG.Error(err)
-		return "", 0
+		return ""
 	}
 	// refreshTokenEncrypted, err := aes.AesCtrEncryptHex([]byte(refreshTokenString), []byte(global.CONFIG.Encrypt.Key), []byte(global.CONFIG.Encrypt.IV))
 	// if err != nil {
 	// 	fmt.Println(err)
 	// 	return "", 0
 	// }
-	return refreshTokenString, refreshClaims.ExpiresAt.Time.Unix()
+	return refreshTokenString
 }
 
 // ParseAccessToken parses a JWT token and returns the payload

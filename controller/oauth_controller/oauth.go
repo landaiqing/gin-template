@@ -3,16 +3,19 @@ package oauth_controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"sync"
+	"time"
+
+	"github.com/gin-gonic/gin"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
+	"schisandra-cloud-album/common/types"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/service/impl"
 	"schisandra-cloud-album/utils"
-	"sync"
-	"time"
 )
 
 type OAuthController struct{}
@@ -36,7 +39,6 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 	user := userService.QueryUserByUuidService(&uid)
 
 	var accessToken, refreshToken string
-	var expiresAt int64
 	var err error
 	var wg sync.WaitGroup
 	var accessTokenErr error
@@ -52,7 +54,7 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 	// 使用goroutine生成refreshToken
 	go func() {
 		defer wg.Done() // 完成时减少计数器
-		refreshToken, expiresAt = utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &uid}, time.Hour*24*7)
+		refreshToken = utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &uid}, time.Hour*24*7)
 	}()
 
 	// 等待两个协程完成
@@ -64,29 +66,28 @@ func HandleLoginResponse(c *gin.Context, uid string) {
 		return
 	}
 
-	data := ResponseData{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
-		UID:          &uid,
-		UserInfo: UserInfo{
-			Username: user.Username,
-			Nickname: user.Nickname,
-			Avatar:   user.Avatar,
-			Email:    user.Email,
-			Phone:    user.Phone,
-			Gender:   user.Gender,
-			Status:   user.Status,
-			CreateAt: *user.CreatedTime,
-		},
+	data := types.ResponseData{
+		AccessToken: accessToken,
+		UID:         &uid,
+		Username:    user.Username,
+		Nickname:    user.Nickname,
+		Avatar:      user.Avatar,
+		Status:      user.Status,
 	}
-
-	if err = utils.SetSession(c, constant.SessionKey, data); err != nil {
+	// 设置session
+	sessionData := utils.SessionData{
+		RefreshToken: refreshToken,
+		UID:          uid,
+	}
+	if err = utils.SetSession(c, constant.SessionKey, sessionData); err != nil {
 		return
 	}
-
+	redisTokenData := types.RedisToken{
+		AccessToken: accessToken,
+		UID:         uid,
+	}
 	// 将数据存入redis
-	if err = redis.Set(constant.UserLoginTokenRedisKey+uid, data, time.Hour*24*7).Err(); err != nil {
+	if err = redis.Set(constant.UserLoginTokenRedisKey+uid, redisTokenData, time.Hour*24*7).Err(); err != nil {
 		global.LOG.Error(err)
 		return
 	}

@@ -1,35 +1,23 @@
 package utils
 
 import (
+	"encoding/gob"
 	"encoding/json"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"schisandra-cloud-album/global"
 )
 
-// ResponseData 返回数据
-type ResponseData struct {
-	AccessToken  string   `json:"access_token"`
-	RefreshToken string   `json:"refresh_token"`
-	ExpiresAt    int64    `json:"expires_at"`
-	UID          *string  `json:"uid"`
-	UserInfo     UserInfo `json:"user_info"`
-}
-type UserInfo struct {
-	Username string    `json:"username,omitempty"`
-	Nickname string    `json:"nickname"`
-	Avatar   string    `json:"avatar"`
-	Phone    string    `json:"phone,omitempty"`
-	Email    string    `json:"email,omitempty"`
-	Gender   string    `json:"gender"`
-	Status   int64     `json:"status"`
-	CreateAt time.Time `json:"create_at"`
+// SessionData 返回数据
+type SessionData struct {
+	RefreshToken string `json:"refresh_token"`
+	UID          string `json:"uid"`
 }
 
 // SetSession sets session data with key and data
-func SetSession(c *gin.Context, key string, data interface{}) error {
+func SetSession(c *gin.Context, key string, data SessionData) error {
+	gob.Register(SessionData{})
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {
 		global.LOG.Error("SetSession failed: ", err)
@@ -50,24 +38,24 @@ func SetSession(c *gin.Context, key string, data interface{}) error {
 }
 
 // GetSession gets session data with key
-func GetSession(c *gin.Context, key string) *ResponseData {
+func GetSession(c *gin.Context, key string) SessionData {
 	session, err := global.Session.Get(c.Request, key)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return nil
+		return SessionData{}
 	}
 	jsonData, ok := session.Values[key]
 	if !ok {
 		global.LOG.Error("GetSession failed: ", "key not found")
-		return nil
+		return SessionData{}
 	}
-	data := ResponseData{}
+	data := SessionData{}
 	err = json.Unmarshal(jsonData.([]byte), &data)
 	if err != nil {
 		global.LOG.Error("GetSession failed: ", err)
-		return nil
+		return SessionData{}
 	}
-	return &data
+	return data
 }
 
 // DelSession deletes session data with key

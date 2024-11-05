@@ -1,20 +1,21 @@
 package impl
 
 import (
-	"encoding/gob"
-	"encoding/json"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
 	"gorm.io/gorm"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/redis"
+	"schisandra-cloud-album/common/types"
 	"schisandra-cloud-album/dao/impl"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/utils"
-	"sync"
-	"time"
 )
 
 var userDao = impl.UserDaoImpl{}
@@ -22,33 +23,6 @@ var userDao = impl.UserDaoImpl{}
 type UserServiceImpl struct{}
 
 var mu = &sync.Mutex{}
-
-// ResponseData 返回数据
-type ResponseData struct {
-	AccessToken  string   `json:"access_token"`
-	RefreshToken string   `json:"refresh_token"`
-	ExpiresAt    int64    `json:"expires_at"`
-	UID          *string  `json:"uid"`
-	UserInfo     UserInfo `json:"user_info"`
-}
-type UserInfo struct {
-	Username string    `json:"username,omitempty"`
-	Nickname string    `json:"nickname"`
-	Avatar   string    `json:"avatar"`
-	Phone    string    `json:"phone,omitempty"`
-	Email    string    `json:"email,omitempty"`
-	Gender   string    `json:"gender"`
-	Status   int64     `json:"status"`
-	CreateAt time.Time `json:"create_at"`
-}
-
-func (res ResponseData) MarshalBinary() ([]byte, error) {
-	return json.Marshal(res)
-}
-
-func (res ResponseData) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, &res)
-}
 
 // GetUserListService 返回用户列表
 func (UserServiceImpl) GetUserListService() []*model.ScaAuthUser {
@@ -95,36 +69,34 @@ func (UserServiceImpl) UpdateUserService(phone, encrypt string) error {
 }
 
 // RefreshTokenService 刷新用户token
-func (UserServiceImpl) RefreshTokenService(refreshToken string) (*ResponseData, bool) {
+func (UserServiceImpl) RefreshTokenService(c *gin.Context, refreshToken string) (string, bool) {
 	parseRefreshToken, isUpd, err := utils.ParseRefreshToken(refreshToken)
 	if err != nil || !isUpd {
 		global.LOG.Errorln(err)
-		return nil, false
+		return "", false
 	}
 	accessTokenString, err := utils.GenerateAccessToken(utils.AccessJWTPayload{UserID: parseRefreshToken.UserID})
 	if err != nil {
-		return nil, false
+		return "", false
 	}
 	tokenKey := constant.UserLoginTokenRedisKey + *parseRefreshToken.UserID
-	token, err := redis.Get(tokenKey).Result()
-	if err != nil || token == "" {
+	session := utils.GetSession(c, constant.SessionKey)
+	if session.RefreshToken == "" {
+		return "", false
+	}
+	redisTokenData := types.RedisToken{
+		AccessToken: accessTokenString,
+		UID:         *parseRefreshToken.UserID,
+	}
+	if err = redis.Set(tokenKey, redisTokenData, time.Hour*24*7).Err(); err != nil {
 		global.LOG.Errorln(err)
-		return nil, false
+		return "", false
 	}
-	data := ResponseData{
-		AccessToken:  accessTokenString,
-		RefreshToken: refreshToken,
-		UID:          parseRefreshToken.UserID,
-	}
-	if err = redis.Set(tokenKey, data, time.Hour*24*7).Err(); err != nil {
-		global.LOG.Errorln(err)
-		return nil, false
-	}
-	return &data, true
+	return accessTokenString, true
 }
 
 // HandelUserLogin 处理用户登录
-func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) (*ResponseData, bool) {
+func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c *gin.Context) (*types.ResponseData, bool) {
 	// 检查 user.UID 是否为 nil
 	if user.UID == "" {
 		return nil, false
@@ -143,30 +115,28 @@ func (UserServiceImpl) HandelUserLogin(user model.ScaAuthUser, autoLogin bool, c
 		days = time.Minute * 30
 	}
 
-	refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &user.UID}, days)
-	data := ResponseData{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
-		UID:          &user.UID,
-		UserInfo: UserInfo{
-			Username: user.Username,
-			Nickname: user.Nickname,
-			Avatar:   user.Avatar,
-			Phone:    user.Phone,
-			Email:    user.Email,
-			Gender:   user.Gender,
-			Status:   user.Status,
-			CreateAt: *user.CreatedTime,
-		},
+	refreshToken := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &user.UID}, days)
+	data := types.ResponseData{
+		AccessToken: accessToken,
+		UID:         &user.UID,
+		Username:    user.Username,
+		Nickname:    user.Nickname,
+		Avatar:      user.Avatar,
+		Status:      user.Status,
 	}
-
-	err = redis.Set(constant.UserLoginTokenRedisKey+user.UID, data, days).Err()
+	redisTokenData := types.RedisToken{
+		AccessToken: accessToken,
+		UID:         user.UID,
+	}
+	err = redis.Set(constant.UserLoginTokenRedisKey+user.UID, redisTokenData, days).Err()
 	if err != nil {
 		return nil, false
 	}
-	gob.Register(ResponseData{})
-	err = utils.SetSession(c, constant.SessionKey, data)
+	sessionData := utils.SessionData{
+		RefreshToken: refreshToken,
+		UID:          user.UID,
+	}
+	err = utils.SetSession(c, constant.SessionKey, sessionData)
 	if err != nil {
 		return nil, false
 	}

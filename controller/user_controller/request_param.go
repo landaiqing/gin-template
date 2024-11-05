@@ -1,10 +1,5 @@
 package user_controller
 
-// RefreshTokenRequest 刷新token请求
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
 // PhoneLoginRequest 手机号登录请求
 type PhoneLoginRequest struct {
 	Phone     string `json:"phone" binding:"required"`

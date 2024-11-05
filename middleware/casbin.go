@@ -10,7 +10,7 @@ import (
 
 func CasbinMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIdAny, exists := c.Get("userId")
+		userIdAny, exists := c.Get("user_id")
 		if !exists {
 			global.LOG.Error("casbin middleware: userId not found")
 			result.FailWithMessage(ginI18n.MustGetMessage(c, "PermissionDenied"), c)

@@ -1,9 +1,12 @@
 package oauth_controller
 
 import (
-	"encoding/gob"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/ArtisanCloud/PowerLibs/v3/http/helper"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/basicService/qrCode/response"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
@@ -14,18 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
+
 	"schisandra-cloud-album/common/constant"
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/randomname"
 	"schisandra-cloud-album/common/redis"
 	"schisandra-cloud-album/common/result"
+	"schisandra-cloud-album/common/types"
 	"schisandra-cloud-album/controller/websocket_controller/qr_ws_controller"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
 	"schisandra-cloud-album/utils"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // CallbackNotify 微信回调
@@ -246,24 +248,20 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			resultChan <- false
 			return
 		}
-		refreshToken, expiresAt := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
-		data := ResponseData{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			ExpiresAt:    expiresAt,
-			UID:          &userId,
-			UserInfo: UserInfo{
-				Username: user.Username,
-				Nickname: user.Nickname,
-				Avatar:   user.Avatar,
-				Gender:   user.Gender,
-				Phone:    user.Phone,
-				Email:    user.Email,
-				CreateAt: *user.CreatedTime,
-				Status:   user.Status,
-			},
+		refreshToken := utils.GenerateRefreshToken(utils.RefreshJWTPayload{UserID: &userId}, time.Hour*24*7)
+		data := types.ResponseData{
+			AccessToken: accessToken,
+			UID:         &userId,
+			Username:    user.Username,
+			Nickname:    user.Nickname,
+			Avatar:      user.Avatar,
+			Status:      user.Status,
 		}
-		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, data, time.Hour*24*7).Err()
+		redisTokenData := types.RedisToken{
+			AccessToken: accessToken,
+			UID:         userId,
+		}
+		fail := redis.Set(constant.UserLoginTokenRedisKey+userId, redisTokenData, time.Hour*24*7).Err()
 		if fail != nil {
 			resultChan <- false
 			return
@@ -279,8 +277,11 @@ func handelUserLogin(userId string, clientId string, c *gin.Context) bool {
 			resultChan <- false
 			return
 		}
-		gob.Register(ResponseData{})
-		wrong := utils.SetSession(c, constant.SessionKey, data)
+		sessionData := utils.SessionData{
+			RefreshToken: refreshToken,
+			UID:          userId,
+		}
+		wrong := utils.SetSession(c, constant.SessionKey, sessionData)
 		if wrong != nil {
 			resultChan <- false
 			return
