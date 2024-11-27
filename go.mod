@@ -33,7 +33,6 @@ require (
 	github.com/swaggo/swag v1.16.4
 	github.com/wenlng/go-captcha-assets v1.0.1
 	github.com/wenlng/go-captcha/v2 v2.0.1
-	github.com/wumansgy/goEncrypt v1.1.0
 	github.com/yitter/idgenerator-go v1.3.3
 	github.com/zmexing/go-sensitive-word v1.3.0
 	go.mongodb.org/mongo-driver v1.17.1

@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/redis/go-redis/v9"
+
 	"schisandra-cloud-album/global"
 )
 
@@ -15,6 +16,7 @@ func InitRedis() {
 		PoolSize:       global.CONFIG.Redis.PoolSize,
 		MinIdleConns:   global.CONFIG.Redis.MinIdle,
 		PoolTimeout:    global.CONFIG.Redis.PoolTimeout,
+		ReadTimeout:    -1,
 	})
 	InitSession(rdb)
 	global.REDIS = rdb

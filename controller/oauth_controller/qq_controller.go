@@ -4,16 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	ginI18n "github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
-	"net/http"
+
 	"schisandra-cloud-album/common/enum"
 	"schisandra-cloud-album/common/result"
 	"schisandra-cloud-album/global"
 	"schisandra-cloud-album/model"
-	"strconv"
 )
 
 type AuthQQme struct {
@@ -94,7 +96,7 @@ func GetQQToken(url string) (*QQToken, error) {
 		global.LOG.Error(err)
 		return nil, err
 	}
-	//将响应体解析为 token，并返回
+	// 将响应体解析为 token，并返回
 	var token QQToken
 	if err = json.NewDecoder(res.Body).Decode(&token); err != nil {
 		global.LOG.Error(err)
