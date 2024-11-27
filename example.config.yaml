@@ -1,0 +1,189 @@
+# 系统配置
+system:
+  # 主机地址
+  host: 0.0.0.0
+  # 端口
+  port: 80
+  # 环境
+  env: debug
+  # 协议
+  protocol: http
+  # 前端地址
+  web: localhost:5173
+  # 信任代理ip地址
+  ip: 127.0.0.1
+#swagger配置
+swagger:
+  # 是否启用swagger
+  enable: true
+  # 文档标题
+  title: Schisandra Cloud Album API
+  # 文档描述
+  description: Schisandra Cloud Album API
+  # 用户名
+  user: schisandra
+  # 密码
+  password: schisandra
+# MySQL配置
+mysql:
+  # 主机地址
+  host:
+  # 端口
+  port: 3306
+  # 数据库名称
+  db: schisandra-cloud-album
+  # 用户名
+  user: root
+  # 密码
+  password: xxxxxxxx
+  # 日志级别
+  log-level: dev
+  # 最大连接数
+  max-open-connes: 100
+  # 最大空闲连接数
+  max-idle-connes: 10
+  # 连接配置
+  config: charset=utf8mb4&parseTime=True&loc=Local
+mongodb:
+  # 主机地址
+  host: xxxxx
+  # 端口
+  port: 27017
+  # 认证源
+  auth-source: admin
+  # 数据库名称
+  db: schisandra-cloud-album
+  # 用户名
+  user: xxxx
+  # 密码
+  password: xxx
+  # 超时时间
+  timeout: 5
+  # 最大连接数
+  max-open-connes: 100
+  # 最大空闲连接数
+  max-idle-connes: 10
+# 日志配置
+logger:
+  # 日志级别
+  level: info
+  # 日志前缀
+  prefix: schisandra
+  # 日志文件存放目录
+  director: "tmp/logs"
+  # 是否显示文件行号
+  show-line: true
+  # 日志文件名
+  log-name: schisandra-cloud-album
+# Redis配置
+redis:
+  # 主机地址
+  host:
+  # 端口
+  port: 6379
+  # 密码
+  password: xxxxx
+  # 数据库
+  db: 0
+  # 最大连接数
+  max-active: 100
+  # 最大空闲连接数
+  max-idle: 10
+  # 最小空闲连接数
+  min-idle: 1
+  # 连接池大小
+  pool-size: 10
+  # 连接池超时时间
+  pool-timeout: 2000ms
+# 短信配置
+sms:
+  ali:
+    # 阿里云API地址
+    host: http://dysmsapi.aliyuncs.com
+    # 阿里云AccessKeyId
+    access-key-id: xxxxx
+    # 阿里云AccessKeySecret
+    access-key-secret: xxxxx
+    # 短信模板ID
+    template-id: SMS_154950909
+    # 短信签名
+    signature: 阿里云短信测试
+  sms-bao:
+    # 短信宝用户账号
+    user: xxx
+    # 短信宝用户密码
+    password: xxx
+# JWT配置
+jwt:
+  # JWT加密密钥
+  secret: 52305be97465408891694329b94fd0b5
+  # JWT请求头键名
+  header-key: Authorization
+  # JWT请求头前缀
+  header-prefix: Bearer
+  # JWT签发者
+  issuer: schisandra-cloud-album
+# 加密配置
+encrypt:
+  # 加密密钥 32位
+  key: 38h0ex04du8qqf9ar2knn1quicdsm4s0
+  # 加密向量 16位
+  iv: qkwsbzdnzzcekt7g
+  # 公钥
+  public-key:
+  # 私钥
+  private-key:
+# 微信配置
+wechat:
+  # 微信公众号APPID
+  app-id: xxxxx
+  # 微信公众号APPSECRET
+  app-secret: xxxx
+  # 微信公众号Token
+  token: xxxx
+  # 微信公众号EncodingAESKey
+  aes-key:
+oauth:
+  # Github配置
+  github:
+    # Github客户端ID
+    client-id: xxxx
+    # Github客户端密钥
+    client-secret: xxxx
+    # Github回调地址
+    redirect-uri: https://landaiqing.cn/api/oauth/github/callback
+  # Gitee配置
+  gitee:
+    # Gitee客户端ID
+    client-id: xxxx
+    # Gitee客户端密钥
+    client-secret: xxxx
+    # Gitee回调地址
+    redirect-uri: https://landaiqing.cn/api/oauth/gitee/callback
+  # QQ配置
+  qq:
+    # QQ客户端ID
+    client-id: xxxx
+    # QQ客户端密钥
+    client-secret: xxxx
+    # QQ回调地址
+    redirect-uri: https://landaiqing.cn/api/oauth/qq/callback
+casbin:
+  # 权限模型文件路径
+  model-path: config/rbac_model.conf
+  # 数据库前缀
+  table-prefix: sca_auth_
+  # 数据库表明
+  table-name: permission_rule
+# nsq配置
+nsq:
+  # nsqd地址
+  host: xxx
+  # nsqd端口
+  port: 4150
+  # nsqlookupd地址
+  lookupd-host: xxxx
+  # nsqlookupd端口
+  lookupd-port: 4161
+
+
