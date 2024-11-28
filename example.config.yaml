@@ -99,13 +99,13 @@ redis:
 sms:
   ali:
     # 阿里云API地址
-    host: http://dysmsapi.aliyuncs.com
+    host: xxxxx
     # 阿里云AccessKeyId
     access-key-id: xxxxx
     # 阿里云AccessKeySecret
     access-key-secret: xxxxx
     # 短信模板ID
-    template-id: SMS_154950909
+    template-id: xxxxxx
     # 短信签名
     signature: 阿里云短信测试
   sms-bao:
@@ -116,7 +116,7 @@ sms:
 # JWT配置
 jwt:
   # JWT加密密钥
-  secret: 52305be97465408891694329b94fd0b5
+  secret: xxxxxx
   # JWT请求头键名
   header-key: Authorization
   # JWT请求头前缀
@@ -126,9 +126,9 @@ jwt:
 # 加密配置
 encrypt:
   # 加密密钥 32位
-  key: 38h0ex04du8qqf9ar2knn1quicdsm4s0
+  key: xxxxxxxxxxxxxxxxxxxxxx
   # 加密向量 16位
-  iv: qkwsbzdnzzcekt7g
+  iv: xxxxxxxxxxxxxxx
   # 公钥
   public-key:
   # 私钥
@@ -151,7 +151,7 @@ oauth:
     # Github客户端密钥
     client-secret: xxxx
     # Github回调地址
-    redirect-uri: https://landaiqing.cn/api/oauth/github/callback
+    redirect-uri: xxxxxxxxxxxxx
   # Gitee配置
   gitee:
     # Gitee客户端ID
@@ -159,7 +159,7 @@ oauth:
     # Gitee客户端密钥
     client-secret: xxxx
     # Gitee回调地址
-    redirect-uri: https://landaiqing.cn/api/oauth/gitee/callback
+    redirect-uri: xxxxxxxxxxxx
   # QQ配置
   qq:
     # QQ客户端ID
@@ -167,7 +167,7 @@ oauth:
     # QQ客户端密钥
     client-secret: xxxx
     # QQ回调地址
-    redirect-uri: https://landaiqing.cn/api/oauth/qq/callback
+    redirect-uri: xxxxxxxxxxxxxxxxxxxx
 casbin:
   # 权限模型文件路径
   model-path: config/rbac_model.conf
